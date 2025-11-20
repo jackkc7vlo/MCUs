@@ -1,0 +1,5 @@
+# This directory is a Syncthing folder marker.
+# Do not delete.
+
+folderID: ojlh7-ehtsm
+created: 2025-11-10T19:12:40-05:00

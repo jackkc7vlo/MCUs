@@ -1,0 +1,2 @@
+source /home/jack/git/MCUs/ESP32-S3-WROOM-1/build/bootloader/gdbinit/symbols
+source /home/jack/git/MCUs/ESP32-S3-WROOM-1/build/bootloader/gdbinit/connect

@@ -1,0 +1,8 @@
+//  Gnu C\C++ (version 2.95.3 or later), -si4 -sp4,
+//  Standard lint options
+
+"C:\Program Files (x86)\PC-lint 9.0\au-barr10.lnt"
+"C:\Program Files (x86)\PC-lint 9.0\co-gcc.lnt"
+++d"NHS3100"
+"C:\Program Files (x86)\PC-lint 9.0\options.lnt"  -si4 -sp4
+-i"D:\Projects\Micros\Common\CMSIS;D:\Projects\Micros\Common\CMSIS\Core\Include;D:\Projects\Micros\Common\RTT;D:\Projects\Micros\Drivers;D:\Projects\Micros\MCUs\NHS3100\Hal;D:\Projects\Micros\MCUs\NHS3100\Include;D:\Projects\Micros\MCUs\NHS3100\Device;D:\Projects\Micros\Common\UnitTests;D:\Projects\Micros\Common\os_hal_include;"

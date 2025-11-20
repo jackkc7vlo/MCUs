@@ -1,0 +1,74 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 23,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/arm-none-eabi-gcc.cmake",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+
+                "PROJECT_ORIGINAL_NAME": "TM4C123G",
+
+                
+                "CMSIS_Dname": "TM4C123GH6PM",
+                "CMSIS_Dcore": "Cortex-M4",
+                "CMSIS_Dtz": "NO_TZ",
+                "CMSIS_Dmpu": "MPU",
+                "CMSIS_Dendian": "Little-endian",
+                "CMSIS_Dsecure": "",
+                "CMSIS_Tcompiler": "GCC"
+            }
+        },
+        {
+            "name": "release",
+            "inherits": "default",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+
+                "PROJECT_ORIGINAL_NAME": "TM4C123G",
+
+               
+                "CMSIS_Dname": "TM4C123GH6PM",
+                "CMSIS_Dcore": "Cortex-M4",
+                "CMSIS_Dtz": "NO_TZ",
+                "CMSIS_Dmpu": "MPU",
+                "CMSIS_Dendian": "Little-endian",
+                "CMSIS_Dsecure": "",
+                "CMSIS_Tcompiler": "GCC"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "hidden": true,
+            "configurePreset": "debug"
+        },
+        {
+            "name": "Debug",
+            "displayName": "Build Debug",
+            "inherits": "default"
+        },
+        {
+            "name": "Release",
+            "displayName": "Build Release",
+            "inherits": "default",
+            "configurePreset": "release"
+        }
+    ]
+}

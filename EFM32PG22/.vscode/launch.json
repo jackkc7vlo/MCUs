@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "EFM32PG22_silabs_debug",
+            "cwd": "${workspaceFolder}",
+            "type": "cortex-debug",
+            "request": "launch",
+            "serverpath": "/home/jack/.silabs/slt/installs/archive/exx32-v6.0.31/JLinkGDBServerCLExe",
+            "servertype": "jlink",
+            "gdbPath": "/home/jack/.silabs/slt/installs/archive/exx32-v6.0.31/arm-none-eabi-gdb",
+            "device": "EFM32PG22CxxxF512",
+            "svdFile": "/tmp/silabs_extension/silabs_extension/svd/EFM32PG22C200F512IM40.svd",
+            "runToEntryPoint": "main",
+            "rtos": "FreeRTOS",
+            "showDevDebugOutput": "raw",
+            "executable": "/home/jack/git/MCUs/EFM32PG22/cmake_gcc/build/base/EFM32PG22.out",
+            "serialNumber": "440226224"
+        }
+    ]
+}

@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.options.statusBarVisibility": "visible",
+		"cortex-debug.variableUseNaturalFormat": true
+	}
+}

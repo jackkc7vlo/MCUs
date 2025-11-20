@@ -1,0 +1,47 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "projectName": "TM4C123G",
+    "configurations": [
+        {
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/debug/TM4C123G.elf",
+            "name": "Debug with OpenOCD",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "serverpath": "/usr/bin/openocd",
+            "armToolchainPath": "/usr/bin",
+            "device": "TM4C123GH6PM",
+            "interface": "swd",
+            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
+            "runToEntryPoint": "main",
+            "svdFile": "./device/TM4C123GH6PM.svd",
+            "configFiles": [
+                "ti_ek-tm4c123gxl.cfg"
+            ],
+            "searchDir": [
+                "/usr/share/openocd/scripts" 
+            ],
+            "showDevDebugOutput": "raw"
+        },
+        {
+            "cwd": "${workspaceFolder}",
+            "executable": "./build/debug/TM4C123G.elf",
+            "name": "JLink launch",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "armToolchainPath": "/usr/bin",
+            "device": "TM4C123GH6PM",
+            "interface": "swd",
+            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
+            "runToEntryPoint": "main",
+            "svdFile": "./device/TM4C123GH6PM.svd",
+            "showDevDebugOutput": "raw"
+        }
+    ]
+}

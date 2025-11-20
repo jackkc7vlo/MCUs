@@ -1,0 +1,7 @@
+{
+    "cmake.useCMakePresets": "always",
+    "cmake.options.statusBarVisibility": "visible",
+    "cortex-debug.variableUseNaturalFormat": true,
+    "cmake.buildBeforeRun": true,
+    "cmake.configureOnOpen": false
+}

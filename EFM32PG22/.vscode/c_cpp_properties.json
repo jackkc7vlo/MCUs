@@ -1,0 +1,52 @@
+{
+    "env": {},
+    "configurations": [
+        {
+            "name": "default_config",
+            "includePath": [
+                "${workspaceFolder}/config",
+                "${workspaceFolder}/autogen",
+                "${workspaceFolder}/.",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/Device/SiliconLabs/EFM32PG22/Include",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/hardware/board/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/clock_manager/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/clock_manager/src",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/CMSIS/Core/Include",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/common/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/device_manager/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/device_init/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/emlib/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/driver/gpio/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/peripheral/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/interrupt_manager/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/interrupt_manager/src",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/interrupt_manager/inc/arm",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/memory_manager/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/hardware/driver/mx25_flash_shutdown/inc/sl_mx25_flash_shutdown_usart",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/sl_main/inc",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/sl_main/src",
+                "${workspaceFolder}/simplicity_sdk_2025.6.2/platform/service/udelay/inc"
+            ],
+            "defines": [
+                "DEBUG_EFM=1",
+                "EFM32PG22C200F512IM40=1",
+                "SL_CODE_COMPONENT_SYSTEM=system",
+                "HFXO_FREQ=38400000",
+                "SL_BOARD_NAME=\\BRD2503A\\",
+                "SL_BOARD_REV=\\A02\\",
+                "SL_CODE_COMPONENT_CLOCK_MANAGER=clock_manager",
+                "SL_COMPONENT_CATALOG_PRESENT=1",
+                "SL_CODE_COMPONENT_GPIO=gpio",
+                "SL_CODE_COMPONENT_HAL_COMMON=hal_common",
+                "SL_CODE_COMPONENT_HAL_GPIO=hal_gpio",
+                "SL_CODE_COMPONENT_INTERRUPT_MANAGER=interrupt_manager",
+                "CMSIS_NVIC_VIRTUAL=1",
+                "CMSIS_NVIC_VIRTUAL_HEADER_FILE=\\cmsis_nvic_virtual.h\\",
+                "SL_CODE_COMPONENT_CORE=core"
+            ],
+            "compileCommands": "${workspaceFolder}/cmake_gcc/build/compile_commands.json"
+        }
+    ],
+    "version": 4,
+    "enableConfigurationSquiggles": true
+}

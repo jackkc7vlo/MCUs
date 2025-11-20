@@ -1,0 +1,6 @@
+{
+    "idf.espIdfPath": "/home/jack/esp/v5.5.1/esp-idf",
+    "idf.toolsPath": "/home/jack/.espressif",
+    "idf.pythonInstallPath": "/usr/bin/python3",
+    "idf.monitorPort": "/dev/ttyUSB0"
+}
