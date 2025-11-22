@@ -37,26 +37,23 @@
  * @moditem{V1.0.x, Mar-08-2025, Jack Wilson, Initial Release, jackkc7vlo@gmail.com }
  * @modend
  *
- */
+*/
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef HW_CONFIG_H_
 #define HW_CONFIG_H_
 
-#define HW_CONFIG_GPIO 1
-#define USE_PORTA_GPIO 0
-#define USE_PORTB_GPIO 0
-#define USE_PORTC_GPIO 0
-#define USE_PORTD_GPIO 0
-#define USE_PORTE_GPIO 0
-#define USE_PORTF_GPIO 1
+#define HW_CONFIG_GPIO       1
 
-#define HW_CONFIG_M4_FPU 0
+
+
+#define HW_CONFIG_M4_FPU     0
 #define HW_CONFIG_DEBUG_UART 0
-#define HW_CONFIG_TIMEBASE 0
-#define HW_CONFIG_BSP 0
-#define HW_CONFIG_ADC 0
-#define HW_CONFIG_SPI 0
-#define HW_CONFIG_I2C 0
+#define HW_CONFIG_TIMEBASE   0
+#define HW_CONFIG_BSP        0
+#define HW_CONFIG_ADC        0
+#define HW_CONFIG_SPI        0
+#define HW_CONFIG_I2C        0
 
 #endif /* HW_CONFIG_H_ */

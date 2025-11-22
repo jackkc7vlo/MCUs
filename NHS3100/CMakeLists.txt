@@ -35,6 +35,7 @@ set(PROJECT_INCLUDE_DIRECTORIES
    ${MCU_DIRECTORY}/device
    ${TOP_DIRECTORY}/CMSIS
    ${TOP_DIRECTORY}/CMSIS/Core/Include
+   ${TOP_DIRECTORY}/hal_include
 #   ${TOP_DIRECTORY}/Common/RTT
 #   ${TOP_DIRECTORY}/Common/hal_include
 #   ${TOP_DIRECTORY}/Common/os_hal_include
@@ -46,7 +47,7 @@ set(PROJECT_INCLUDE_DIRECTORIES
 #sources
 file(GLOB_RECURSE SRC_FILES
    ${MCU_DIRECTORY}/source/*.c
-#   ${MCU_DIRECTORY}/hal/*.c
+   ${MCU_DIRECTORY}/hal/*.c
    ${MCU_DIRECTORY}/device/*.c
 #   ${MCU_DIRECTORY}/os_hal/*.c
 #   ${MCU_DIRECTORY}/TagCode/Source/*.c
@@ -81,6 +82,7 @@ target_compile_options(${EXECUTABLE} PRIVATE
     -ffunction-sections
 	-fmessage-length=0
 	-fno-builtin
+    -nostdlib
 	-fmerge-constants
 	-fstack-usage
     -fdiagnostics-color=auto
@@ -103,14 +105,16 @@ target_link_options(${EXECUTABLE} PRIVATE
     -specs=nano.specs
     -specs=nosys.specs
     -Wl,--start-group
-    -lc
-    -lm
-    -lnosys
     -Wl,--end-group
     -Wl,-Map=${PROJECT_NAME}.map,--cref
     -Wl,--gc-sections
 	-Xlinker --gc-sections -Xlinker
     -Wl,--print-memory-usage
+    -Wl,--no-warn-rwx-segment
+    -lc
+    -lm
+    -lnosys
+    -nostdlib
 )
 
 # Optional: Print executable size as part of the post build process

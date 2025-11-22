@@ -6,28 +6,6 @@
     "projectName": "NHS3100",
     "configurations": [
         {
-            "cwd": "${workspaceRoot}",
-            "executable": "./NHS3100.elf",
-            "name": "Debug with OpenOCD",
-            "request": "launch",
-            "type": "cortex-debug",
-            "servertype": "openocd",
-            "serverpath": "/usr/bin/openocd",
-            "armToolchainPath": "/usr/bin",
-            "device": "NHS3100",
-            "interface": "swd",
-            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
-            "runToEntryPoint": "main",
-            "svdFile": "./device/NHS3100.svd",
-            "configFiles": [
-                "debug.cfg"
-            ],
-            "searchDir": [
-                "/usr/share/openocd/scripts" 
-            ],
-            "showDevDebugOutput": "raw"
-        },
-        {
             "cwd": "${workspaceFolder}",
             "executable": "./build/debug/NHS3100.elf",
             "name": "JLink launch",

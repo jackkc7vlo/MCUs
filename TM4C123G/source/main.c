@@ -1,49 +1,53 @@
-#include <stdint.h>
+#include "device_gpio.h"
+#include "device_sysctl.h"
+#include "gpio_hal.h"
 #include "tm4c123gh6pm.h"
-#include "sysctl.h"
-#include "gpio.h"
+#include <hw_config.h>
+#include <stdint.h>
 
 //---PORT-F I/O---//
 #define PF1 0x02
 #define PF2 0x04
 #define PF3 0x08
+#define PF4 0x10
+#define PF5 0x20
+#define PF6 0x40
+#define PF7 0x80
 
 //---USER FUNCTION'S---//
 void delay(unsigned long);
 
 int main(void)
 {
-    p_sysctl->rcgcgpio |= 0x20; // Enable clock for PORTF
-    //SYSCTL_RCGCGPIO_R |= 0x20; // Enable clock for PORTF
-    p_gpio_f->den = 0x0E; // Enable PORTF [PF3:PF1] as digital pins
-    //GPIO_PORTF_DEN_R  = 0x0E;  // Enable PORTF [PF3:PF1] as digital pins
-    p_gpio_f->dir = 0x0E; // Configure PORTF [PF3:PF1] as digital output pins
-    //GPIO_PORTF_DIR_R  = 0x0E;  // Configure PORTF [PF3:PF1] as digital output pins
+#if HW_CONFIG_GPIO == 1
+    p_gpio_hal_t gpio_handle = gpio_hal_create(GPIOF_PORT);
+    gpio_handle->init(gpio_handle);
+#endif // HW_CONFIG_GPIO
 
-    while (1) {
+    while (1)
+    {
 
-        p_gpio_f->data = 0; 
-        p_gpio_f->data = PF1; // turn on LED_R
+#if HW_CONFIG_GPIO == 1
+        gpio_handle->write(gpio_handle, 0);
+        gpio_handle->set(gpio_handle, PF1, true);
 
-        //GPIO_PORTF_DATA_R = 0;
-        //GPIO_PORTF_DATA_R |= PF1; // turn on LED_R
         delay(1000000);
-        p_gpio_f->data = 0; 
-        p_gpio_f->data = PF2; // turn on LED_R
+        gpio_handle->write(gpio_handle, 0);
+        gpio_handle->set(gpio_handle, PF2, true);
 
-        //GPIO_PORTF_DATA_R = 0;
-        //GPIO_PORTF_DATA_R |= PF2; // turn on LED_B
         delay(1000000);
-        p_gpio_f->data = 0; 
-        p_gpio_f->data = PF3; // turn on LED_R
+        gpio_handle->write(gpio_handle, 0);
+        gpio_handle->set(gpio_handle, PF3, true);
 
-        //GPIO_PORTF_DATA_R = 0;
-        //GPIO_PORTF_DATA_R |= PF3; // turn on LED_G
+#endif // HW_CONFIG_GPIO
+
         delay(1000000);
     }
 }
 
-void delay(unsigned long count) {
-   unsigned long i=0;
-   for(i=0; i<count; i++);
+void delay(unsigned long count)
+{
+    unsigned long i = 0;
+    for (i = 0; i < count; i++)
+        ;
 }

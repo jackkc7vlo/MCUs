@@ -10,9 +10,9 @@
  * activate or otherwise use the software.
  */
 
+#include "assert.h"
 #include "cmsis.h"
 #include "stdbool.h"
-#include "assert.h"
 // #include "diag/diag.h"
 #include "startup.h"
 
@@ -20,20 +20,22 @@
 #define ALIAS(f) __attribute__((weak, alias(#f)))
 
 // Forward declarations
-extern int main(void);
-void ResetISR(void);
+extern int       main(void);
+void             ResetISR(void);
 WEAK extern void __valid_user_code_checksum();
 
-extern void _vStackTop(void); /**< External declaration for the pointer to the stack top from the Linker Script */
+extern void _vStackTop(void); /**< External declaration for the pointer to the
+                                 stack top from the Linker Script */
 
 /* ------------------------------------------------------------------------- */
 
 /** Initializes RW data sections. */
-__attribute__((section(".after_vectors"))) static void data_init(unsigned int romstart, unsigned int start, unsigned int len)
+__attribute__((section(".after_vectors"))) static void
+data_init(unsigned int romstart, unsigned int start, unsigned int len)
 {
     unsigned int *pulDest = (unsigned int *)start;
-    unsigned int *pulSrc = (unsigned int *)romstart;
-    unsigned int loop;
+    unsigned int *pulSrc  = (unsigned int *)romstart;
+    unsigned int  loop;
     for (loop = 0; loop < len; loop = loop + 4)
     {
         *pulDest++ = *pulSrc++;
@@ -41,10 +43,11 @@ __attribute__((section(".after_vectors"))) static void data_init(unsigned int ro
 }
 
 /** Initializes BSS data sections. */
-__attribute__((section(".after_vectors"))) static void bss_init(unsigned int start, unsigned int len)
+__attribute__((section(".after_vectors"))) static void bss_init(unsigned int start,
+                                                                unsigned int len)
 {
     unsigned int *pulDest = (unsigned int *)start;
-    unsigned int loop;
+    unsigned int  loop;
     for (loop = 0; loop < len; loop = loop + 4)
     {
         *pulDest++ = 0;
@@ -67,7 +70,7 @@ __attribute__((section(".after_vectors"))) static void defaultIntHandler(void)
 __attribute__((section(".after_vectors"))) void ResetISR(void)
 {
 
-    unsigned int LoadAddr, ExeAddr, SectionLen;
+    unsigned int  LoadAddr, ExeAddr, SectionLen;
     unsigned int *SectionTableAddr;
 
     // Load base address of Global Section Table
@@ -76,8 +79,8 @@ __attribute__((section(".after_vectors"))) void ResetISR(void)
     // Copy the data sections from flash to SRAM.
     while (SectionTableAddr < &__data_section_table_end)
     {
-        LoadAddr = *SectionTableAddr++;
-        ExeAddr = *SectionTableAddr++;
+        LoadAddr   = *SectionTableAddr++;
+        ExeAddr    = *SectionTableAddr++;
         SectionLen = *SectionTableAddr++;
         data_init(LoadAddr, ExeAddr, SectionLen);
     }
@@ -85,7 +88,7 @@ __attribute__((section(".after_vectors"))) void ResetISR(void)
     // Zero fill the bss segment
     while (SectionTableAddr < &__bss_section_table_end)
     {
-        ExeAddr = *SectionTableAddr++;
+        ExeAddr    = *SectionTableAddr++;
         SectionLen = *SectionTableAddr++;
         bss_init(ExeAddr, SectionLen);
     }
@@ -97,7 +100,8 @@ __attribute__((section(".after_vectors"))) void ResetISR(void)
 
 /* ------------------------------------------------------------------------- */
 
-/* Forward declaration of the specific IRQ handlers. These are aliased to defaultIntHandler. */
+/* Forward declaration of the specific IRQ handlers. These are aliased to
+ * defaultIntHandler. */
 
 void NMI_Handler(void) ALIAS(defaultIntHandler);
 void HardFault_Handler(void) ALIAS(defaultIntHandler);
@@ -138,22 +142,27 @@ void PIO0_IRQHandler(void) ALIAS(defaultIntHandler);
 /** The vector table. This @b must be linked to physical address 0x0000.0000. */
 extern void (*const g_pfnVectors[])(void);
 __attribute__((section(".isr_vector"))) void (*const g_pfnVectors[])(void) = {
-    &_vStackTop,                /* Handler for EXCEPTION0  @0x00000000 - The initial stack pointer */
+    &_vStackTop,                /* Handler for EXCEPTION0  @0x00000000 - The initial stack
+                                   pointer */
     ResetISR,                   /* Handler for EXCEPTION1  @0x00000004 - The reset handler */
     NMI_Handler,                /* Handler for EXCEPTION2  @0x00000008 - The NMI handler */
-    HardFault_Handler,          /* Handler for EXCEPTION3  @0x0000000C - The hard fault handler */
+    HardFault_Handler,          /* Handler for EXCEPTION3  @0x0000000C - The hard fault
+                                   handler */
     defaultIntHandler,          /* Handler for EXCEPTION4  @0x00000010 - Reserved */
     defaultIntHandler,          /* Handler for EXCEPTION5  @0x00000014 - Reserved */
     defaultIntHandler,          /* Handler for EXCEPTION6  @0x00000018 - Reserved */
-    __valid_user_code_checksum, /* Handler for EXCEPTION7  @0x0000001C - Reserved */
+    __valid_user_code_checksum, /* Handler for EXCEPTION7  @0x0000001C -
+                                   Reserved */
     defaultIntHandler,          /* Handler for EXCEPTION8  @0x00000020 - Reserved */
     defaultIntHandler,          /* Handler for EXCEPTION9  @0x00000024 - Reserved */
     defaultIntHandler,          /* Handler for EXCEPTION10 @0x00000028 - Reserved */
     SVC_Handler,                /* Handler for EXCEPTION11 @0x0000002C - SVCall handler */
     defaultIntHandler,          /* Handler for EXCEPTION12 @0x00000030 - Reserved */
     defaultIntHandler,          /* Handler for EXCEPTION13 @0x00000034 - Reserved */
-    PendSV_Handler,             /* Handler for EXCEPTION14 @0x00000038 - The PendSV handler */
-    SysTick_Handler,            /* Handler for EXCEPTION15 @0x0000003C - The SysTick handler */
+    PendSV_Handler,             /* Handler for EXCEPTION14 @0x00000038 - The PendSV handler
+                                 */
+    SysTick_Handler,            /* Handler for EXCEPTION15 @0x0000003C - The SysTick
+                                   handler */
     PIO0_0_IRQHandler,          /* Handler for EXCEPTION16 - INTERRUPT0  @0x00000040 */
     PIO0_1_IRQHandler,          /* Handler for EXCEPTION17 - INTERRUPT1  @0x00000044 */
     PIO0_2_IRQHandler,          /* Handler for EXCEPTION18 - INTERRUPT2  @0x00000048 */
