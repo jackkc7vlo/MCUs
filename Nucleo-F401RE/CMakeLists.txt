@@ -25,6 +25,11 @@ project("Nucleo-F401RE")
 enable_language(C CXX ASM)
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
+set(TOP_DIRECTORY
+   /home/jack/git/MCUs
+)
+
+set( MCU_DIRECTORY ${TOP_DIRECTORY}/Nucleo-F401RE )
 # Setup compiler settings
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -41,14 +46,18 @@ set(cpu_PARAMS
 )
 
 # Sources
-set(sources_SRCS
-	${CMAKE_CURRENT_SOURCE_DIR}/source/main.c
+file(GLOB_RECURSE sources_SRCS
+   ${MCU_DIRECTORY}/source/*.c
+   ${MCU_DIRECTORY}/hal/*.c
+   ${MCU_DIRECTORY}/device/*.c
 )
+
 
 # Include directories for all compilers
 set(include_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/device
+    ${TOP_DIRECTORY}/hal_include
 )
 
 # Include directories for each compiler

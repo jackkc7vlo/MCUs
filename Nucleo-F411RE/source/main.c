@@ -33,8 +33,6 @@ int main(void)
     {
         gpio_handle->toggle(gpio_handle, 5);
         delay(1000000);
-        gpio_handle->set(gpio_handle, 5, false);
-        delay(1000000);
     }
 }
 
