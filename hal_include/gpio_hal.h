@@ -55,6 +55,8 @@
 #define GPIOD_PORT 3
 #define GPIOE_PORT 4
 #define GPIOF_PORT 5
+#define GPIOG_PORT 6
+#define GPIOH_PORT 7
 
 /**
  * @brief Port pin state enumeration

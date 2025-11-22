@@ -16,27 +16,31 @@
  ******************************************************************************
  */
 
+#include "device_gpio.h"
+#include "device_rcc.h"
+#include "gpio_hal.h"
 #include <stdint.h>
-#include "rcc.h"
-#include "gpio.h"
+
+void delay(unsigned long);
 
 int main(void)
 {
-    p_rcc->ahb1enr |= (1U << RCC_AHB1ENR_GPIOAEN_BIT);  /* Enable GPIOA clock */
 
-    //RCC->AHB1ENR |= GPIOAEN;  /* Enable GPIOA clock */
-    /* Loop forever */
+    p_gpio_hal_t gpio_handle = gpio_hal_create(GPIOA_PORT);
+    gpio_handle->init(gpio_handle);
 
-    p_gpioa->moder &= ~(3U << (2U * 5U));  // Clear bits 10 and 11
-    p_gpioa->moder |=  (1U << (2U * 5U));  // Set bit 10 to make PA5 output
-	//GPIOA->MODER &=~(1U<<11);  // make sure bit 11 is off
-	//GPIOA->MODER |= (1U<<10);  // set bit 10 on
-
-
-	for(;;)
+    for (;;)
     {
-        p_gpioa->odr ^= (1U << 5U);  // Toggle PA5
-        //GPIOA->ODR ^= (1U<<5);  // Toggle PA5
-        for (volatile int i = 0; i < 100000; i++);  // Simple delay
+        gpio_handle->toggle(gpio_handle, 5);
+        delay(1000000);
+        gpio_handle->set(gpio_handle, 5, false);
+        delay(1000000);
     }
+}
+
+void delay(unsigned long count)
+{
+    unsigned long i = 0;
+    for (i = 0; i < count; i++)
+        ;
 }

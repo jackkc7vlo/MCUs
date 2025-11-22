@@ -1,15 +1,33 @@
+/******************************************************************************
+ * Copyright (C) 2025 by Jack Wilson
+ *
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *
+ ************************(C) COPYRIGHT 2025 Jack Wilson **********************/
 /**
  * @file device_gpio.h
- * @author Jack Wilson (jackkc7vlo@gmail.com)
- * @brief
- * @version 0.1
- * @date 2025-11-15
+ * @brief Generic GPIO device definition.
+ * @details Outlines the portable GPIO abstraction used to configure and interact with digital pins
+ * on any supported platform.
  *
- * @copyright Copyright (c) 2025
+ * @author  Jack Wilson
+ * @date    September 15, 2025
+ * @version 1.0.0
  *
- * General Purpose Input/Output (GPIO) definitions for the TI TM4C123GH6PM microcontroller.
+ * @copyright Copyright (c) 2025 Jack Wilson
+ * @license MIT License
  */
-
 #include <stdint.h>
 #ifndef DEVICE_GPIO_H
 #define DEVICE_GPIO_H
