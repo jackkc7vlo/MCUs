@@ -7,13 +7,16 @@
       "includePath": [
         "${config:idf.espIdfPath}/components/**",
         "${config:idf.espIdfPathWin}/components/**",
-        "${workspaceFolder}/**"
+        "${workspaceFolder}/**",
+        "/home/jack/git/MCUs/hal_include/**"
+
       ],
       "browse": {
         "path": [
           "${config:idf.espIdfPath}/components",
           "${config:idf.espIdfPathWin}/components",
-          "${workspaceFolder}"
+          "${workspaceFolder}",
+          "/home/jack/git/MCUs/hal_include"
         ],
         "limitSymbolsToIncludedHeaders": true
       }

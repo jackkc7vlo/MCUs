@@ -64,10 +64,9 @@ extern "C"
     //<! Pointer to an incomplete type (hides implementation)
     typedef struct gpio_hal_config_handle
     {
-        uint32_t pin_mask;       /**< Pin mask for GPIO pins (1 = valid pin, 0 = invalid pin) */
-        uint32_t direction_mask; /**< Direction mask for GPIO pins (1 = output, 0 = input) */
-        uint32_t
-            pull_up_mask; /**< Pull-up resistor mask for GPIO pins (1 = enabled, 0 = disabled) */
+        uint32_t pin_mask;        /**< Pin mask for GPIO pins (1 = valid pin, 0 = invalid pin) */
+        uint32_t direction_mask;  /**< Direction mask for GPIO pins (1 = output, 0 = input) */
+        uint32_t pull_up_mask;    /**< Pull-up resistor mask for GPIO pins (1 = enabled, 0 = disabled) */
         uint32_t pull_down_mask;  /**< Pull-down resistor mask for GPIO pins (1 = enabled, 0 =
                                      disabled) */
         uint32_t open_drain_mask; /**< Open-drain configuration mask for GPIO pins (1 = enabled, 0 =
@@ -273,59 +272,60 @@ extern "C"
         }
         if (p_gpio_hal->config_handle != NULL)
         {
-            p_gpio_hal_config_handle_t p_config =
-                (p_gpio_hal_config_handle_t)p_gpio_hal->config_handle;
-
+            p_gpio_hal_config_handle_t p_config = (p_gpio_hal_config_handle_t)p_gpio_hal->config_handle;
+            reg_gpio_t                *p_gpio   = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
             // Enable pins
-            p_gpio_hal->p_device_gpio->den &=
-                ~p_config->pin_mask; // Clear bits that are not to be used
-            p_gpio_hal->p_device_gpio->den |=
-                (p_config->pin_mask); // Set bits to enable digital function
+            p_gpio->den &= ~p_config->pin_mask;  // Clear bits that are not to be used
+            p_gpio->den |= (p_config->pin_mask); // Set bits to enable digital function
 
             // Configure pin directions
-            p_gpio_hal->p_device_gpio->dir &= ~p_config->pin_mask; // Clear bits to set as input
-            p_gpio_hal->p_device_gpio->dir |=
-                (p_config->direction_mask & p_config->pin_mask); // Set bits to set as output
+            p_gpio->dir &= ~p_config->pin_mask;                             // Clear bits to set as input
+            p_gpio->dir |= (p_config->direction_mask & p_config->pin_mask); // Set bits to set as output
         }
     }
 
     void gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
         if (value)
         {
-            p_gpio_hal->p_device_gpio->data |= pin;
+            p_gpio->data |= pin;
         }
         else
         {
-            p_gpio_hal->p_device_gpio->data &= ~pin;
+            p_gpio->data &= ~pin;
         }
     }
 
     bool gpio_hal_get_state(const void *p_handle, uint8_t pin)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        return (p_gpio_hal->p_device_gpio->data) != 0u;
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        return (p_gpio->data) != 0u;
 
     } /*lint !e818*/
 
     void gpio_hal_toggle_state(const void *p_handle, uint8_t pin)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        p_gpio_hal->p_device_gpio->data ^= (pin);
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        p_gpio->data ^= (pin);
 
     } /*lint !e818*/
 
     void gpio_hal_write_port(const void *p_handle, uint8_t value)
     {
-        p_gpio_hal_t p_gpio_hal         = (p_gpio_hal_t)p_handle;
-        p_gpio_hal->p_device_gpio->data = (uint32_t)value;
+        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        p_gpio->data            = (uint32_t)value;
     }
 
     uint8_t gpio_hal_read_port(const void *p_handle)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        return (p_gpio_hal->p_device_gpio->data & 0xFFu);
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        return (p_gpio->data & 0xFFu);
     }
 
 #endif // HW_CONFIG_GPIO

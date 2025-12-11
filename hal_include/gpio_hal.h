@@ -32,7 +32,7 @@
 #ifndef GPIO_HAL_H
 #define GPIO_HAL_H
 
-#include <device_gpio.h>
+
 #include <hw_config.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -93,7 +93,7 @@ typedef void (*gpio_hal_interrupt_callback_t)(void *handle,
 typedef struct gpio_hal {
   void *config_handle; /**< Pointer to platform-specific context passed to the
                           HAL implementation. */
-  reg_gpio_t *p_device_gpio; /**< Pointer to the GPIO port device registers. */
+  void *p_device_gpio; /**< Pointer to the GPIO port device registers. */
   /**
    * @brief Initialize the GPIO subsystem.
    *

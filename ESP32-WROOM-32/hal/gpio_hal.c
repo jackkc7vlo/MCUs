@@ -16,7 +16,7 @@
  *
  ************************(C) COPYRIGHT 2025 Jack Wilson **********************/
 /**
- * @file gpio_hal.h
+ * @file gpio_hal.c
  * @brief Generic GPIO HAL interface definition.
  * @details Outlines the portable GPIO abstraction used to configure and
  * interact with digital pins on any supported platform.
@@ -44,9 +44,9 @@ extern "C"
 /*lint -esym(793,__*)*/
 #include <hw_config.h>
 #if HW_CONFIG_GPIO == 1
+#include <hal/gpio_types.h>
+#include "driver/gpio.h"
 #include "device_gpio.h"
-#include "device_iocon.h"
-#include "device_syscon.h"
 #include <assert.h>
 #include <gpio_hal.h>
 #include <hw_config.h>
@@ -78,13 +78,12 @@ extern "C"
     } gpio_hal_config_handle_t, *p_gpio_hal_config_handle_t;
 
     static gpio_hal_config_handle_t gpio_hal_config_port_a = {
-        .pin_mask = GPIO_PIN7_BIT,        // | GPIO_PIN6_BIT | GPIO_PIN5_BIT |
-                                          // GPIO_PIN4_BIT | GPIO_PIN3_BIT | GPIO_PIN2_BIT
-                                          // | GPIO_PIN1_BIT | GPIO_PIN0_BIT,
-        .direction_mask  = GPIO_PIN7_BIT, // Set PIO0_7 as output
-        .pull_up_mask    = GPIO_PIN7_BIT,
-        .pull_down_mask  = 0x00000000u,
-        .open_drain_mask = 0x00000000u};
+        .pin_mask      = GPIO_PIN2_BIT,
+        .direction_mask = GPIO_PIN2_BIT,
+        .pull_up_mask   = 0U,
+        .pull_down_mask = 0U,
+        .open_drain_mask= 0U
+    };
 
     // forward declarations
     void    gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value);
@@ -113,102 +112,78 @@ extern "C"
     p_gpio_hal_t gpio_hal_create(uint32_t port)
     {
         (void)port;
-        // On the NHS3100 there is only one GPIO port, so we ignore port_count
-        gpio_hal_port_a.p_device_gpio = p_device_gpio_a;
-
         return (p_gpio_hal_t)&gpio_hal_port_a;
     } /*lint !e818*/
 
     void gpio_hal_init(const void *p_handle)
-    {
+    {   
         // assert(p_handle != NULL);
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        if (p_gpio_hal != NULL)
-        {
-            p_syscon->ahbclkctrl |= (SYSCON_AHBCLKCTRL_GPIO_BIT | SYSCON_AHBCLKCTRL_IOCON_BIT) &
-                                    SYSCON_AHBCLKCTRL_BITS_THAT_CAN_BE_SET; // Enable GPIO and IOCON
-                                                                            // clock
-        }
-        if (p_gpio_hal->config_handle != NULL)
-        {
-            p_gpio_hal_config_handle_t p_config =
-                (p_gpio_hal_config_handle_t)p_gpio_hal->config_handle;
+        p_gpio_hal_config_handle_t p_config =
+            (p_gpio_hal_config_handle_t)p_gpio_hal->config_handle;
 
-            reg_gpio_t *p_gpio = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-            // Configure pin directions
-            p_gpio->dir &= ~p_config->pin_mask; // Clear bits to set as input
-            p_gpio->dir |=
-                (p_config->direction_mask & p_config->pin_mask); // Set bits to set as output
-
-            // Configure pull-up/pull-down resistors and open-drain settings as
-            // needed (Assuming IOCON registers are used for this configuration)
-            for (uint8_t pin = 0; pin <= 11; pin++)
+        for (uint32_t i = 0; i < 32u; i++)
+        {
+            if ((p_config->pin_mask & (1u << i)) != 0u)
             {
-                uint32_t pin_bit = (1U << pin);
-                if (p_config->pin_mask & pin_bit)
+                gpio_reset_pin(i);
+                gpio_set_direction(i, (p_config->direction_mask & (1u << i)) != 0u ? GPIO_MODE_OUTPUT : GPIO_MODE_INPUT);
+                if ((p_config->pull_up_mask & (1u << i)) != 0u)
                 {
-                    uint32_t mode = 0;
-                    if (p_config->pull_up_mask & pin_bit)
-                    {
-                        mode |= IOCON_MODE_PULLUP;
-                    }
-                    else if (p_config->pull_down_mask & pin_bit)
-                    {
-                        mode |= IOCON_MODE_PULLDOWN;
-                    }
-                    //                    if (p_config->open_drain_mask &
-                    //                    pin_bit)
-                    //                   {
-                    //                       mode |= IOCON_OPEN_DRAIN_EN;
-                    //                   }
-                    // Assuming all pins are on port 0 for simplicity
-                    volatile uint32_t *p_iocon_reg = &p_iocon->pio0_0 + pin;
-                    *p_iocon_reg                   = IOCON_FUNC_GPIO | mode;
+                    gpio_set_pull_mode(i, GPIO_PULLUP_ONLY);
+                }
+                else if ((p_config->pull_down_mask & (1u << i)) != 0u)
+                {
+                    gpio_set_pull_mode(i, GPIO_PULLDOWN_ONLY);
+                }
+                else
+                {
+                    gpio_set_pull_mode(i, GPIO_FLOATING);
+                }
+                if ((p_config->open_drain_mask & (1u << i)) != 0u)
+                {
+                    // Open-drain not directly supported in ESP32 GPIO API
+                    // Custom handling may be required here
                 }
             }
         }
+
     }
 
     void gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        p_gpio->data[1 << pin]  = (uint32_t)value ? 1U << pin : 0U;
-        // NSS_GPIO[p_gpio->port].DATA[1u << p_gpio->pin] = (uint32_t)state <<
-        // p_gpio->pin;
+        (void)p_handle;
+   
+        gpio_set_level(pin, value);
 
     } /*lint !e818*/
 
     bool gpio_hal_get_state(const void *p_handle, uint8_t pin)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        return (p_gpio->data[1 << pin]) != 0u;
-        // return (NSS_GPIO[p_gpio->port].DATA[1u << p_gpio->pin]) != 0u;
+        (void)p_handle;
+        return (gpio_get_level(pin)) != 0u;
+ 
     } /*lint !e818*/
 
     void gpio_hal_toggle_state(const void *p_handle, uint8_t pin)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        p_gpio->data[1 << pin] ^= (1u << pin);
-        // NSS_GPIO[p_gpio->port].DATA[1u << p_gpio->pin] ^= (1u <<
-        // p_gpio->pin);
-    } /*lint !e818*/
+        (void)p_handle;
+        bool value = gpio_get_level(pin);
+        gpio_set_level(pin, !value);
+     } /*lint !e818*/
 
     void gpio_hal_write_port(const void *p_handle, uint8_t value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        p_gpio->data[0xfff]     = (uint32_t)value;
-        // p_gpio_hal->p_device_gpio->data = (uint32_t)value;
+        //p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
+        (void)p_handle;
+        (void)value;
     }
 
     uint8_t gpio_hal_read_port(const void *p_handle)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        return (p_gpio->data[0xfff]) & 0xFF;
+        //p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
+        return 0;
+       
     }
 #endif // HW_CONFIG_GPIO
 

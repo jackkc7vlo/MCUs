@@ -328,40 +328,46 @@ extern "C"
     void gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+
         if (value)
         {
-            p_gpio_hal->p_device_gpio->odr |= (1U << pin);
+            p_gpio->odr |= (1U << pin);
         }
         else
         {
-            p_gpio_hal->p_device_gpio->odr &= ~(1U << pin);
+            p_gpio->odr &= ~(1U << pin);
         }
     }
 
     bool gpio_hal_get_state(const void *p_handle, uint8_t pin)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        return (p_gpio_hal->p_device_gpio->odr & (1U << pin)) != 0u;
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        return (p_gpio->odr & (1U << pin)) != 0u;
 
     } /*lint !e818*/
 
     void gpio_hal_toggle_state(const void *p_handle, uint8_t pin)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        p_gpio_hal->p_device_gpio->odr ^= (1U << pin);
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        p_gpio->odr ^= (1U << pin);
 
     } /*lint !e818*/
 
     void gpio_hal_write_port(const void *p_handle, uint8_t value)
     {
-        p_gpio_hal_t p_gpio_hal        = (p_gpio_hal_t)p_handle;
-        p_gpio_hal->p_device_gpio->odr = (uint32_t)value;
+        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        p_gpio->odr             = (uint32_t)value;
     }
 
     uint8_t gpio_hal_read_port(const void *p_handle)
     {
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        return (p_gpio_hal->p_device_gpio->odr & 0xFFu);
+        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        return (p_gpio->odr & 0xFFu);
     }
 
 #endif // HW_CONFIG_GPIO

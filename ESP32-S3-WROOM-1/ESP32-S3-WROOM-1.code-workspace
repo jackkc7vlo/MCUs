@@ -2,7 +2,20 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../hal_include"
+		},
+		{
+			"path": "../drivers"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"files.associations": {
+			"gpio_hal.h": "c",
+			"i2c_master.h": "c",
+			"cstdint": "c",
+			"bitset": "c"
+		}
+	}
 }
