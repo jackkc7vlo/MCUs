@@ -97,22 +97,24 @@ extern "C"
         } i2c_hal_device_def_t;
     */
 #if HW_CONFIG_I2C_NUM_DEVICES >= 1
-    static i2c_device_hal_t i2c_device1 = {.p_master       = &i2c_master_device,
-                                           .device_address = HW_CONFIG_I2C1_ADDRESS,
-                                           .address_length = I2C_ADDR_BIT_LEN_7,
-                                           .p_callback     = NULL,
-                                           .write          = i2c_hal_write,
-                                           .read           = i2c_hal_read,
-                                           .enable         = i2c_hal_enable};
+    static i2c_device_hal_t i2c_device1 = {.p_master          = &i2c_master_device,
+                                           .device_address    = HW_CONFIG_I2C1_ADDRESS,
+                                           .address_length    = I2C_ADDR_BIT_LEN_7,
+                                           .p_callback        = NULL,
+                                           .write             = i2c_hal_write,
+                                           .read              = i2c_hal_read,
+                                           .enable            = i2c_hal_enable,
+                                           .i2c_device_handle = NULL};
 #endif
 #if HW_CONFIG_I2C_NUM_DEVICES >= 2
-    static i2c_device_hal_t i2c_device2 = {.p_master       = &i2c_master_device,
-                                           .device_address = HW_CONFIG_I2C2_ADDRESS,
-                                           .address_length = I2C_ADDR_BIT_LEN_7,
-                                           .p_callback     = NULL,
-                                           .write          = i2c_hal_write,
-                                           .read           = i2c_hal_read,
-                                           .enable         = i2c_hal_enable};
+    static i2c_device_hal_t i2c_device2 = {.p_master          = &i2c_master_device,
+                                           .device_address    = HW_CONFIG_I2C2_ADDRESS,
+                                           .address_length    = I2C_ADDR_BIT_LEN_7,
+                                           .p_callback        = NULL,
+                                           .write             = i2c_hal_write,
+                                           .read              = i2c_hal_read,
+                                           .enable            = i2c_hal_enable,
+                                           .i2c_device_handle = NULL};
 #else
 #pragma message("Too Many I2C Devices Defined!")
 #endif
@@ -175,10 +177,17 @@ extern "C"
 
             return NULL;
         }
+        if (p_i2c_device->i2c_device_handle != NULL)
+        {
+            return p_i2c_device;
+            p_i2c_device->p_callback = p_callback;
+        }
+
         if (!i2c_initialized)
         {
             i2c_hal_initialize(100000U);
         }
+
         i2c_hal_master_def_t *p_master         = &i2c_master_device;
         p_i2c_device->p_master                 = p_master;
         p_i2c_device->p_callback               = p_callback;
@@ -192,7 +201,11 @@ extern "C"
                     .disable_ack_check = 0,
                 },
         };
-
+        if (p_i2c_device->i2c_device_handle != NULL)
+        {
+            return p_i2c_device;
+        }
+        i2c_master_dev_handle_t i2c_master_device_handle;
         i2c_master_bus_add_device(p_master->i2c_bus_handle, &i2c_mst_dev_config, &i2c_master_device_handle);
         p_i2c_device->i2c_device_handle = &i2c_master_device_handle;
 

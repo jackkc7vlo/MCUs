@@ -129,13 +129,13 @@
 // end SPI configuration
 
 // begin I2C configuration
-#define HW_CONFIG_I2C 0U
+#define HW_CONFIG_I2C 1U
 #define I2C_BUS I2C_NUM_0
 #define HW_CONFIG_I2C_SDA_PORT 5
 #define HW_CONFIG_I2C_SCL_PORT 4
 
 #define HW_CONFIG_I2C_NUM_DEVICES 2
-#define HW_CONFIG_I2C1_ADDRESS 0x38
+#define HW_CONFIG_I2C1_ADDRESS 0x18 // es8311 address
 
 #define HW_CONFIG_ADDRESS_LENGTH_1 7
 
@@ -147,5 +147,9 @@
 
 // i2c devices
 #define HAS_PCF8574A 0u
+
+#define HAS_ES8311 1u
+#define ES8311_I2C_ADDRESS 0x18
+#define ES8311_PA_ENABLE_GPIO 9
 
 #endif /* HW_CONFIG_H_ */

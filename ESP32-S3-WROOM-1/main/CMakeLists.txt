@@ -23,5 +23,6 @@ file(GLOB_RECURSE SRC_FILES
 
 idf_component_register(SRCS "main.c" ${SRC_FILES}
                     PRIV_REQUIRES esp_driver_spi esp_driver_gpio esp_driver_i2c esp_driver_ledc
-                    INCLUDE_DIRS "." ${PROJECT_INCLUDE_DIRECTORIES}) 
+                    INCLUDE_DIRS "." ${PROJECT_INCLUDE_DIRECTORIES}
+                    EMBED_FILES "canon.pcm") 
 

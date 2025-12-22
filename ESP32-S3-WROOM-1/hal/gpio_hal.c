@@ -86,9 +86,9 @@ extern "C"
 
     static gpio_hal_config_handle_t gpio_hal_config_port_a = {
 #if AUTO_CS == 1u
-        .bank[0] = {.pin_mask       = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN18_BIT),
-                    .direction_mask = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN18_BIT),
-                    //.pull_up_mask    = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN18_BIT),
+        .bank[0] = {.pin_mask       = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN9_BIT | GPIO_PIN18_BIT),
+                    .direction_mask = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN9_BIT | GPIO_PIN18_BIT),
+                    //.pull_up_mask    = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN9_BIT | GPIO_PIN18_BIT),
                     .pull_up_mask    = 0U,
                     .pull_down_mask  = 0U,
                     .open_drain_mask = 0U},

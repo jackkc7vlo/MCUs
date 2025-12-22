@@ -14,6 +14,9 @@
 #if HAS_ST7735 == 1u
 #include "drv_st7735.h"
 #endif
+#if HAS_ES8311 == 1u
+#include "drv_es8311.h"
+#endif
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -27,7 +30,6 @@
 #include <esp_log.h>
 #include <spi_hal.h>
 #include <stdio.h>
-
 // static const char *TAG = "example";
 
 /* Use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
@@ -204,6 +206,59 @@ static void example_ledc_init(void)
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 }
 
+codec_config_t codec_cfg = {
+    //.input_device  = INPUT_DEVICE_ADC_MIC,
+    //.output_device = OUTPUT_DEVICE_DAC_HEADPHONE,
+    .i2s = {
+        .mode = MODE_MASTER, .bits = BIT_LENGTH_16BITS, .channels = CHANNELS2, .rate = RATE_24K, .fmt = I2S_NORMAL
+        //.signal_type = SIGNAL_TYPE_PCM,
+    }};
+
+extern const uint8_t music_pcm_start[] asm("_binary_canon_pcm_start");
+extern const uint8_t music_pcm_end[] asm("_binary_canon_pcm_end");
+
+static void i2s_music(void *args)
+{
+    esp_err_t ret         = ESP_OK;
+    size_t    bytes_write = 0;
+    uint8_t  *data_ptr    = (uint8_t *)music_pcm_start;
+
+    /* (Optional) Disable TX channel and preload the data before enabling the TX
+     * channel, so that the valid data can be transmitted immediately */
+    ESP_ERROR_CHECK(i2s_channel_disable(tx_handle));
+    ESP_ERROR_CHECK(i2s_channel_preload_data(tx_handle, data_ptr, music_pcm_end - data_ptr, &bytes_write));
+    data_ptr += bytes_write; // Move forward the data pointer
+
+    /* Enable the TX channel */
+    ESP_ERROR_CHECK(i2s_channel_enable(tx_handle));
+    while (1)
+    {
+        /* Write music to earphone */
+        ret = i2s_channel_write(tx_handle, data_ptr, music_pcm_end - data_ptr, &bytes_write, portMAX_DELAY);
+        if (ret != ESP_OK)
+        {
+            /* Since we set timeout to 'portMAX_DELAY' in 'i2s_channel_write'
+               so you won't reach here unless you set other timeout value,
+               if timeout detected, it means write operation failed. */
+            ESP_LOGE(TAG, "[music] i2s write failed, %s", err_reason[ret == ESP_ERR_TIMEOUT]);
+            abort();
+        }
+        if (bytes_write > 0)
+        {
+            ESP_LOGI(TAG, "[music] i2s music played, %d bytes are written.", bytes_write);
+        }
+        else
+        {
+            ESP_LOGE(TAG, "[music] i2s music play failed.");
+            abort();
+        }
+        data_ptr = (uint8_t *)music_pcm_start;
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+    vTaskDelete(NULL);
+}
+
+//******************* APP MAIN ***********************************/
 void app_main(void)
 {
 #if HW_CONFIG_GPIO == 1
@@ -254,12 +309,17 @@ void app_main(void)
 #endif // HW_CONFIG_SPI
 
 #if HW_CONFIG_I2C == 1
+    void    *p_i2c_handle   = i2c_hal_create_device(1u, NULL);
     uint32_t pcf8574a_state = 0xFFu;
     i2c_hal_initialize(100000u);
 #if HAS_PCF8574A == 1u
     void *pcf8574a_device = drv_pcf8574a_init();
 #endif // HAS_PCF8574A
+#if HAS_ES8311 == 1u
 
+    void *p_es8311_i2c_device = drv_es8311_codec_init(&codec_cfg, 0);
+    gpio_handle->set(gpio_handle, ES8311_PA_ENABLE_GPIO, 1);
+#endif // HAS_ES8311
 #endif // HW_CONFIG_I2C
 
 #if HW_CONFIG_SPI == 1U
