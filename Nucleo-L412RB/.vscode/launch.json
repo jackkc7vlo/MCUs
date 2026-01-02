@@ -22,35 +22,24 @@
             "showDevDebugOutput": "raw"
         },
         {
-            "name": "OpenOCD Debug",
-            "type": "cppdbg",
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/Debug/Nucleo-L412RB.elf",
+            "name": "OpenOCD Debug (Linux)",
             "request": "launch",
-            "program": "c:\\projects\\MCUs\\Nucleo-L412RB\\build\\Debug\\Nucleo-L412RB.elf",
-            "svdPath": "",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "miDebuggerPath": "gdb-multiarch",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set remote target to port 3333",
-                    "text": "target remote :3333",
-                    "ignoreFailures": false
-                }
-            ]
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "serverpath": "/usr/bin/openocd",
+            "configFiles": [
+                "debug.cfg"
+            ],
+            "searchDir": [
+                "/usr/share/openocd/scripts" 
+            ],
+            "device": "STM32L412RB",
+            "runToEntryPoint": "main",
+            "svdFile": "${workspaceFolder}/device/STM32L412.svd",
+            "showDevDebugOutput": "raw"
         }
+        
     ]
 }
