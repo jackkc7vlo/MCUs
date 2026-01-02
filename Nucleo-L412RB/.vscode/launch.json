@@ -1,0 +1,56 @@
+{
+    "configurations": [
+    {
+            "name": "OpenOCD Debug (Windows)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "./build/Debug/Nucleo-L412RB.elf", // Or specify path to your .elf file
+            "servertype": "openocd",
+            "serverpath": "C:\\OpenOCD\\bin\\openocd.exe", // Path to OpenOCD executable on Windows
+            "gdbPath": "arm-none-eabi-gdb.exe", // Ensure this is in your system's PATH, or provide full path
+            "configFiles": [
+                "interface/stlink.cfg", // Replace with your probe's config file
+                "target/stm32l4x.cfg"  // Replace with your target's config file
+            ],
+            "searchDir": [
+                "C:/openocd/scripts" // Path to OpenOCD scripts folder on Windows
+            ],
+            "device": "STM32L412RB",
+            "runToEntryPoint": "main",
+            "svdFile": "${workspaceFolder}/device/STM32L412.svd",
+            "showDevDebugOutput": "raw"
+        },
+        {
+            "name": "OpenOCD Debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "c:\\projects\\MCUs\\Nucleo-L412RB\\build\\Debug\\Nucleo-L412RB.elf",
+            "svdPath": "",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb-multiarch",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set remote target to port 3333",
+                    "text": "target remote :3333",
+                    "ignoreFailures": false
+                }
+            ]
+        }
+    ]
+}

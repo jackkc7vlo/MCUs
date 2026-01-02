@@ -66,6 +66,19 @@ typedef enum {
   PORT_STATE_HIGH     /**< Pin state is logic high */
 } port_state_t;
 
+/**
+ * @brief Port pin mode
+ */
+typedef enum {
+  INPUT = 0, /**< Input Pin */
+  OUTPUT,    /**< Output Pin */
+  ALT,       /**< Alternate Function */
+  ANALOG,    /**< Analog */
+  BIDIRECTIONAL
+} pin_direction_t;
+
+
+
 typedef struct gpio_hal_handle {
 
   uint32_t open_drain_mask; /**< Open-drain configuration mask for GPIO pins (1
@@ -104,6 +117,16 @@ typedef struct gpio_hal {
    */
   void (*init)(const void *p_handle);
 
+  /**
+   * @brief Set the logical state of a GPIO pin.
+   *
+   * @param handle Pointer to platform-specific context passed to the HAL
+   * implementation.
+   * @param pin Identifier of the pin to configure.
+   * @param value Logical value to drive on the pin.
+   *
+   */
+  bool (*direction)(const void *p_handle, uint8_t pin, pin_direction_t value);
   /**
    * @brief Set the logical state of a GPIO pin.
    *
