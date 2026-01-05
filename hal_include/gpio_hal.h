@@ -32,7 +32,6 @@
 #ifndef GPIO_HAL_H
 #define GPIO_HAL_H
 
-
 #include <hw_config.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -61,28 +60,52 @@
 /**
  * @brief Port pin state enumeration
  */
-typedef enum {
-  PORT_STATE_LOW = 0, /**< Pin state is logic low */
-  PORT_STATE_HIGH     /**< Pin state is logic high */
+typedef enum
+{
+    PORT_STATE_LOW = 0, /**< Pin state is logic low */
+    PORT_STATE_HIGH     /**< Pin state is logic high */
 } port_state_t;
+
+/**
+ * @brief Port pin direction
+ */
+typedef enum
+{
+    INPUT = 0, /**< Input Pin */
+    OUTPUT,    /**< Output Pin */
+    ALT,       /**< Alternate Function */
+    ANALOG,    /**< Analog */
+    BIDIRECTIONAL
+} pin_direction_t;
 
 /**
  * @brief Port pin mode
  */
-typedef enum {
-  INPUT = 0, /**< Input Pin */
-  OUTPUT,    /**< Output Pin */
-  ALT,       /**< Alternate Function */
-  ANALOG,    /**< Analog */
-  BIDIRECTIONAL
-} pin_direction_t;
+typedef enum
+{
+    FLOAT,     /**< Floating (High Impedance) Input */
+    PULLUP,    /**< PULLUP Resistor */
+    PULLDOWN,  /**< PULLDOWN Resistor */
+    OPENDRAIN, /**< Open Drain Output */
+    PUSHPULL,  /**< Push Pull Output */
+} pin_mode_t;
 
+/**
+ * @brief Port pin speed
+ */
+typedef enum
+{
+    LOWSPEED,    /**< Floating (High Impedance) Input */
+    MEDIUMSPEED, /**< PULLUP Resistor */
+    FASTSPEED,   /**< PULLDOWN Resistor */
+    HIGHSPEED,   /**< Open Drain Output */
+} pin_speed_t;
 
+typedef struct gpio_hal_handle
+{
 
-typedef struct gpio_hal_handle {
-
-  uint32_t open_drain_mask; /**< Open-drain configuration mask for GPIO pins (1
-                               = enabled, 0 = disabled) */
+    uint32_t open_drain_mask; /**< Open-drain configuration mask for GPIO pins (1
+                                 = enabled, 0 = disabled) */
 } gpio_hal_handle_t, *p_gpio_hal_handle_t;
 
 /**
@@ -93,8 +116,7 @@ typedef struct gpio_hal_handle {
  * GPIO interrupt occurs. The @p handle argument points to the same context
  * passed during registration, allowing the callback to access hardware state.
  */
-typedef void (*gpio_hal_interrupt_callback_t)(void *handle,
-                                              void *callback_context);
+typedef void (*gpio_hal_interrupt_callback_t)(void *handle, void *callback_context);
 
 /**
  * @struct gpio_hal_t
@@ -103,100 +125,25 @@ typedef void (*gpio_hal_interrupt_callback_t)(void *handle,
  * The structure exposes platform hooks for initializing GPIO hardware and
  * performing basic pin manipulation in a portable manner.
  */
-typedef struct gpio_hal {
-  void *config_handle; /**< Pointer to platform-specific context passed to the
-                          HAL implementation. */
-  void *p_device_gpio; /**< Pointer to the GPIO port device registers. */
-  /**
-   * @brief Initialize the GPIO subsystem.
-   *
-   * @param handle Pointer to platform-specific context passed to the HAL
-   * implementation.
-   *
-   * @return 0 on success, negative value when initialization fails.
-   */
-  void (*init)(const void *p_handle);
+typedef struct gpio_hal
+{
+    void *config_handle; /**< Pointer to platform-specific context passed to the
+                            HAL implementation. */
+    void *p_device_gpio; /**< Pointer to the GPIO port device registers. */
 
-  /**
-   * @brief Set the logical state of a GPIO pin.
-   *
-   * @param handle Pointer to platform-specific context passed to the HAL
-   * implementation.
-   * @param pin Identifier of the pin to configure.
-   * @param value Logical value to drive on the pin.
-   *
-   */
-  bool (*direction)(const void *p_handle, uint8_t pin, pin_direction_t value);
-  /**
-   * @brief Set the logical state of a GPIO pin.
-   *
-   * @param handle Pointer to platform-specific context passed to the HAL
-   * implementation.
-   * @param pin Identifier of the pin to configure.
-   * @param value Logical value to drive on the pin.
-   *
-   */
-  void (*set)(const void *p_handle, uint8_t pin, bool value);
-
-  /**
-   * @brief Read the logical state of a GPIO pin.
-   *
-   * @param handle Pointer to platform-specific context passed to the HAL
-   * implementation.
-   * @param pin Identifier of the pin to sample.
-   *
-   * @return Logical value of the pin on success, negative value when the read
-   * fails.
-   */
-  bool (*get)(const void *p_handle, uint8_t pin);
-
-  /**
-   * @brief Toggle the logical state of a GPIO pin.
-   *
-   * @param handle Pointer to platform-specific context passed to the HAL
-   * implementation.
-   * @param pin Identifier of the pin to sample.
-   *
-   */
-  void (*toggle)(const void *p_handle, uint8_t pin);
-
-  /**
-   * @brief Write to the GPIO port.
-   *
-   * @param handle Pointer to platform-specific context passed to the HAL
-   * implementation.
-   * @param value Logical value to drive on the pin.
-   *
-   * @return 0 on success, negative value when the operation fails.
-   */
-  void (*write)(const void *p_handle, uint8_t value);
-
-  /**
-   * @brief Read from the GPIO port.
-   *
-   * @param handle Pointer to platform-specific context passed to the HAL
-   * implementation.
-   * @param value Logical value to drive on the pin.
-   *
-   * @return 0 on success, negative value when the operation fails.
-   */
-  uint8_t (*read)(const void *p_handle);
-
-  /**
-   * @brief Register a callback to be invoked on GPIO interrupt events.
-   *
-   * @param handle Pointer to platform-specific context associated with the
-   * callback.
-   * @param callback Function to invoke when an interrupt fires. May be NULL to
-   * clear the registration.
-   *
-   * @return 0 on success, negative value when registration fails.
-   */
-  int (*register_callback)(const void *p_handle,
-                           gpio_hal_interrupt_callback_t callback,
-                           void *p_callback_context);
+    int (*register_callback)(const void *p_handle, gpio_hal_interrupt_callback_t callback, void *p_callback_context);
 } gpio_hal_t, *p_gpio_hal_t;
 
 p_gpio_hal_t gpio_hal_create(uint32_t port);
+
+void    gpio_hal_init(const void *p_handle);
+void    gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value);
+bool    gpio_hal_get_state(const void *p_handle, uint8_t pin);
+void    gpio_hal_toggle_state(const void *p_handle, uint8_t pin);
+void    gpio_hal_write_port(const void *p_handle, uint8_t value);
+uint8_t gpio_hal_read_port(const void *p_handle);
+bool    gpio_hal_pin_direction(const void *p_handle, uint8_t pin, pin_direction_t value);
+bool    gpio_hal_pin_mode(const void *p_handle, uint8_t pin, pin_mode_t value);
+bool    gpio_hal_pin_speed(const void *p_handle, uint8_t pin, pin_speed_t value);
 
 #endif /* GPIO_HAL_H */

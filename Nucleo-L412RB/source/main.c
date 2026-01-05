@@ -19,8 +19,8 @@
 #include "device_gpio.h"
 #include "device_rcc.h"
 #include "gpio_hal.h"
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 void delay(unsigned long);
 
@@ -30,28 +30,26 @@ int main(void)
     p_gpio_hal_t gpiob_handle = gpio_hal_create(GPIOB_PORT);
     if (gpiob_handle != NULL)
     {
-        gpiob_handle->init(gpiob_handle);
-        gpiob_handle->direction(gpiob_handle, 13, OUTPUT);
+        gpio_hal_init(gpiob_handle);
+        gpio_hal_pin_direction(gpiob_handle, LED_PIN, OUTPUT);
     }
-    
+
     p_gpio_hal_t gpioc_handle = gpio_hal_create(GPIOC_PORT);
     if (gpioc_handle != NULL)
     {
-        gpioc_handle->init(gpioc_handle);
-        gpioc_handle->direction(gpioc_handle, 13, INPUT);
+        gpio_hal_init(gpioc_handle);
+        gpio_hal_pin_direction(gpioc_handle, BUTTON_PIN, INPUT);
     }
-    
 
     for (;;)
-    {   
-        if (gpioc_handle->get(gpioc_handle, 13))
+    {
+        if (gpio_hal_get_state(gpioc_handle, BUTTON_PIN))
         {
-            gpiob_handle->set(gpiob_handle, 13, true);
+            gpio_hal_set_state(gpiob_handle, LED_PIN, true);
         }
         else
-        //delay(100000); 
         {
-            gpiob_handle->set(gpiob_handle, 13, false);
+            gpio_hal_set_state(gpiob_handle, LED_PIN, false);
         }
         delay(100000);
     }

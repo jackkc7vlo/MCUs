@@ -19,6 +19,7 @@
 #include "device_gpio.h"
 #include "device_rcc.h"
 #include "gpio_hal.h"
+#include <stddef.h>
 #include <stdint.h>
 
 void delay(unsigned long);
@@ -26,13 +27,31 @@ void delay(unsigned long);
 int main(void)
 {
 
-    p_gpio_hal_t gpio_handle = gpio_hal_create(GPIOA_PORT);
-    gpio_handle->init(gpio_handle);
+    p_gpio_hal_t gpioa_handle = gpio_hal_create(GPIOA_PORT);
+    if (gpioa_handle != NULL)
+    {
+        gpio_hal_init(gpioa_handle);
+        gpio_hal_pin_direction(gpioa_handle, LED_PIN, OUTPUT);
+    }
+
+    p_gpio_hal_t gpioc_handle = gpio_hal_create(GPIOC_PORT);
+    if (gpioc_handle != NULL)
+    {
+        gpio_hal_init(gpioc_handle);
+        gpio_hal_pin_direction(gpioc_handle, BUTTON_PIN, INPUT);
+    }
 
     for (;;)
     {
-        gpio_handle->toggle(gpio_handle, 5);
-        delay(1000000);
+        if (gpio_hal_get_state(gpioc_handle, BUTTON_PIN))
+        {
+            gpio_hal_set_state(gpioa_handle, LED_PIN, true);
+        }
+        else
+        {
+            gpio_hal_set_state(gpioa_handle, LED_PIN, false);
+        }
+        delay(100000);
     }
 }
 
