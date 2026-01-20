@@ -1,11 +1,14 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../hal_include"
-		}
-	],
-	"settings": {}
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "../hal_include"
+    },
+    {
+      "path": "../drivers"
+    }
+  ],
+  "settings": {}
 }

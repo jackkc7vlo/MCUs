@@ -21,7 +21,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  */
-
+#include "hw_config.h"
+#if HAS_ES8311 == 1
 #include "drv_es8311.h"
 #include <assert.h>
 #include <esp_log.h>
@@ -770,3 +771,4 @@ void drv_es8311_read_all(const void *p_i2c_handle)
         ESP_LOGI("es8311", "REG:%02x, %02x", reg, i);
     }
 }
+#endif // HAS_ES8311

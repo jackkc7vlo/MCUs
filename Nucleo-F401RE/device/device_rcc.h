@@ -151,7 +151,7 @@ static reg_rcc_t *p_device_rcc = (reg_rcc_t *const)(REG_RCC_BASE);
 // #define REG_RCC_AHB1ENR (*(volatile unsigned int *)(REG_RCC_BASE + 0x30U))
 
 static uint32_t *p_device_rcc_ahb1enr = (uint32_t *const)(REG_RCC_BASE + 0x30U);
-#define RCC_AHB1ENR_GPIOAEN_BIT (0U)
+#define RCC_AHB1ENR_GPIOAEN_BIT (1U << 0U)
 #define RCC_AHB1ENR_GPIOBEN_BIT (1U << 1U)
 #define RCC_AHB1ENR_GPIOCEN_BIT (1U << 2U)
 #define RCC_AHB1ENR_GPIODEN_BIT (1U << 3U)
