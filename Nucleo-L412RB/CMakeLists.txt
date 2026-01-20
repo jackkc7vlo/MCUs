@@ -58,21 +58,21 @@ set(cpu_PARAMS
 )
 
 # Sources
-#set(sources_SRCS
-#	${CMAKE_CURRENT_SOURCE_DIR}/source/main.c
-#)
+# Sources
 file(GLOB_RECURSE sources_SRCS
    ${MCU_DIRECTORY}/source/*.c
    ${MCU_DIRECTORY}/hal/*.c
    ${MCU_DIRECTORY}/device/*.c
+   ${TOP_DIRECTORY}/drivers/*.c
 )
+
 
 # Include directories for all compilers
 set(include_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/device
     ${TOP_DIRECTORY}/hal_include
-
+    ${TOP_DIRECTORY}/drivers
 )
 
 # Include directories for each compiler

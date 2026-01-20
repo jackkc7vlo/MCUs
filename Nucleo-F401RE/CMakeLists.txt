@@ -25,9 +25,15 @@ project("Nucleo-F401RE")
 enable_language(C CXX ASM)
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
+if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+set(TOP_DIRECTORY
+   C:/projects/MCUs
+)
+else ()
 set(TOP_DIRECTORY
    /home/jack/git/MCUs
 )
+endif()
 
 set( MCU_DIRECTORY ${TOP_DIRECTORY}/Nucleo-F401RE )
 # Setup compiler settings

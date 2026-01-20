@@ -25,9 +25,15 @@ project("Nucleo-F411RE")
 enable_language(C CXX ASM)
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
+if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+set(TOP_DIRECTORY
+   C:/projects/MCUs
+)
+else ()
 set(TOP_DIRECTORY
    /home/jack/git/MCUs
 )
+endif()
 
 set( MCU_DIRECTORY ${TOP_DIRECTORY}/Nucleo-F411RE )
 # Setup compiler settings
@@ -46,21 +52,21 @@ set(cpu_PARAMS
 )
 
 # Sources
-#set(sources_SRCS
-#	${CMAKE_CURRENT_SOURCE_DIR}/source/main.c
-#)
+# Sources
 file(GLOB_RECURSE sources_SRCS
    ${MCU_DIRECTORY}/source/*.c
    ${MCU_DIRECTORY}/hal/*.c
    ${MCU_DIRECTORY}/device/*.c
+   ${TOP_DIRECTORY}/drivers/*.c
 )
+
 
 # Include directories for all compilers
 set(include_DIRS
 	${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/device
     ${TOP_DIRECTORY}/hal_include
-
+    ${TOP_DIRECTORY}/drivers
 )
 
 # Include directories for each compiler
