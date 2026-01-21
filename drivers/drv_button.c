@@ -46,7 +46,7 @@ extern "C"
 #if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
 #include "drv_button.h"
 #include <device_gpio.h>
-#include <device_rcc.h>
+// #include <device_rcc.h>
 #include <gpio_hal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -79,6 +79,17 @@ extern "C"
 #if (NUMBER_OF_BUTTONS > 2U)
 #message("Error: NUMBER_OF_BUTTONS greater than 2 not supported")
 #endif // NUMBER_OF_BUTTONS
+    /********************************************************************************
+     * Functions
+     ********************************************************************************/
+    void button_isr_callback(void *p_handle, void *p_callback_context)
+    {
+        button_handle_t *p_button = (button_handle_t *)p_handle;
+        if (p_button != NULL && p_button->p_callback != NULL)
+        {
+            p_button->p_callback(drv_button_is_pressed(p_button) ? BUTTON_PRESSED : BUTTON_RELEASED);
+        }
+    }
 
     void *drv_button_create(uint32_t port, uint8_t pin, p_button_callback_t p_callback)
     {
@@ -101,6 +112,7 @@ extern "C"
         p_button->port       = port;
         p_button->pin        = pin;
         p_button->p_callback = p_callback;
+
         return (void *)p_button;
     }
 
@@ -119,6 +131,11 @@ extern "C"
         p_button->p_gpio_hal = gpio_handle;
         gpio_hal_init(gpio_handle);
         gpio_hal_pin_direction(gpio_handle, p_button->pin, INPUT);
+        if (p_button->p_callback != NULL)
+        {
+            gpio_hal_register_callback(p_button->p_gpio_hal, p_button, p_button->pin, button_isr_callback, p_button,
+                                       IRQ_BOTH);
+        }
         return true;
     }
 

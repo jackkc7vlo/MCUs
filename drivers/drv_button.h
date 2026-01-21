@@ -54,8 +54,16 @@ extern "C"
     /********************************************************************************
      * Typedefs & Enums
      ********************************************************************************/
+    /**
+     * @brief Button state enumeration
+     */
+    typedef enum
+    {
+        BUTTON_RELEASED = 0, /**< Button is released */
+        BUTTON_PRESSED       /**< Button is pressed */
+    } button_state_t;
 
-    typedef bool (*p_button_callback_t)(void *);
+    typedef void (*p_button_callback_t)(button_state_t button_state);
 
     typedef void *p_button_handle_t;
     /********************************************************************************

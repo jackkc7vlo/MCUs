@@ -78,6 +78,15 @@ typedef enum
     BIDIRECTIONAL
 } pin_direction_t;
 
+typedef enum
+{
+    IRQ_POSITIVE = 0, /**< Input Pin */
+    IRQ_NEGATIVE,     /**< Output Pin */
+    IRQ_BOTH,         /**< Alternate Function */
+    IRQ_NONE,         /**< Analog */
+    IRQ_RESERVED
+} irq_edge_t;
+
 /**
  * @brief Port pin mode
  */
@@ -128,10 +137,12 @@ typedef void (*gpio_hal_interrupt_callback_t)(void *handle, void *callback_conte
 typedef struct gpio_hal
 {
     void *config_handle; /**< Pointer to platform-specific context passed to the
-                            HAL implementation. */
+HAL implementation. */
     void *p_device_gpio; /**< Pointer to the GPIO port device registers. */
 
-    int (*register_callback)(const void *p_handle, gpio_hal_interrupt_callback_t callback, void *p_callback_context);
+    gpio_hal_interrupt_callback_t callback;          /**< Registered interrupt callback */
+    void                         *p_callback_handle; /**< Pointer to callback context (i.e. Button handle)*/
+    void                         *callback_context;
 } gpio_hal_t, *p_gpio_hal_t;
 
 p_gpio_hal_t gpio_hal_create(uint32_t port);
@@ -145,5 +156,7 @@ uint8_t gpio_hal_read_port(const void *p_handle);
 bool    gpio_hal_pin_direction(const void *p_handle, uint8_t pin, pin_direction_t value);
 bool    gpio_hal_pin_mode(const void *p_handle, uint8_t pin, pin_mode_t value);
 bool    gpio_hal_pin_speed(const void *p_handle, uint8_t pin, pin_speed_t value);
+bool    gpio_hal_register_callback(const void *p_handle, const void *p_callback_handle, uint8_t pin,
+                                   gpio_hal_interrupt_callback_t callback, void *p_callback_context, irq_edge_t edge);
 
 #endif /* GPIO_HAL_H */

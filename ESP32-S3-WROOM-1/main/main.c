@@ -23,12 +23,16 @@
 #include "gpio_hal.h"
 #include "hw_config.h"
 #include "i2c_hal.h"
+#if HAS_LED_STRIP == 1
 #include "led_strip.h"
+#endif // HAS_LED_STRIP
+#include "drv_button.h"
 #include "sdkconfig.h"
 #include "spi_hal.h"
 #include <driver/gpio.h>
 #include <esp_log.h>
 #include <spi_hal.h>
+
 #include <stdio.h>
 // static const char *TAG = "example";
 
@@ -36,6 +40,24 @@
    or you can edit the following line and set a number here.
 */
 // #define BLINK_GPIO CONFIG_BLINK_GPIO
+p_gpio_hal_t gpio_led_handle = NULL;
+
+void delay(unsigned long);
+
+void button_callback(button_state_t button_state)
+{
+    // button_handle_t p_button_handle = (button_handle_t)p_button;
+    if (button_state == BUTTON_PRESSED)
+    {
+        gpio_hal_set_state(gpio_led_handle, LED_PIN, true);
+        // ESP_LOGI("TAG", "Button Pressed!");
+    }
+    else
+    {
+        gpio_hal_set_state(gpio_led_handle, LED_PIN, false);
+        // ESP_LOGI("TAG", "Button Released!");
+    }
+}
 
 #if HAS_LED_STRIP == 1
 #include "led_strip.h"
@@ -177,6 +199,7 @@ void lcd_init(spi_device_handle_t spi)
 #endif // HW_CONFIG_SPI
 ///*********************************************************** */
 
+#if HAS_LED_STRIP == 1
 #define LEDC_TIMER LEDC_TIMER_0
 #define LEDC_MODE LEDC_LOW_SPEED_MODE
 #define LEDC_OUTPUT_IO (3) // Define the output GPIO
@@ -205,7 +228,8 @@ static void example_ledc_init(void)
                                           .hpoint     = 0};
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel));
 }
-
+#endif // HAS_LED_STRIP
+#if HAS_ES8311_I2S == 1u
 codec_config_t codec_cfg = {
     //.input_device  = INPUT_DEVICE_ADC_MIC,
     //.output_device = OUTPUT_DEVICE_DAC_HEADPHONE,
@@ -257,8 +281,11 @@ static void i2s_music(void *args)
     }
     vTaskDelete(NULL);
 }
+#endif // HAS_ES8311_I2S
 
 //******************* APP MAIN ***********************************/
+
+#if 0
 void app_main(void)
 {
 #if HW_CONFIG_GPIO == 1
@@ -371,7 +398,7 @@ void app_main(void)
     // Battery Icon in the top right corner
 #endif // HAS_ILI9341
 #endif // HW_CONFIG_SPI
-
+#if HAS_LED_STRIP == 1
     example_ledc_init();
     //   Set duty to 50%
     // ESP_ERROR_CHECK(ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, LEDC_DUTY));
@@ -381,6 +408,7 @@ void app_main(void)
     led_strip_set_pixel(led_strip, 0, 16, 0, 0);
     led_strip_refresh(led_strip);
     // gpio_handle->set(gpio_handle, 53, true);
+#endif // HAS_LED_STRIP
 #if HAS_ST7735 == 1
     for (uint16_t x = 0; x < ST7735_WIDTH; x++)
     {
@@ -445,4 +473,53 @@ void app_main(void)
         // s_led_state = !s_led_state;
         vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
     }
+}
+#else
+void app_main(void)
+{
+#if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
+    //    p_gpio_hal_t gpioc_handle = gpio_hal_create(GPIOC_PORT);
+    //    if (gpioc_handle != NULL)
+    //    {
+    //        gpio_hal_init(gpioc_handle);
+    //        gpio_hal_pin_direction(gpioc_handle, BUTTON_PIN, INPUT);
+    //    }
+    p_button_handle_t p_button_handle = drv_button_create(BUTTON_PORT, BUTTON_PIN, button_callback);
+    if (p_button_handle != NULL)
+    {
+        drv_button_init(p_button_handle);
+    }
+    gpio_led_handle = gpio_hal_create(GPIOA_PORT);
+    if (gpio_led_handle != NULL)
+    {
+        gpio_hal_init(gpio_led_handle);
+        gpio_hal_pin_direction(gpio_led_handle, LED_PIN, OUTPUT);
+    }
+#endif // HW_CONFIG_GPIO AND USE_BUTTON_GPIO
+
+    while (1 == 1)
+    {
+        delay(1000);
+        // drv_button_is_pressed(p_button_handle);
+        bool pressed = drv_button_is_pressed(p_button_handle);
+        ESP_LOGI("TAG", "Button is %s", pressed ? "PRESSED" : "RELEASED");
+        bool led_state = gpio_hal_get_state(gpio_led_handle, LED_PIN);
+        ESP_LOGI("TAG", "LED is %s", led_state ? "ON" : "OFF");
+        /*
+        if (pressed)
+        {
+            gpio_hal_set_state(gpioa_handle, LED_PIN, true);
+        }
+        else
+        {
+            gpio_hal_set_state(gpioa_handle, LED_PIN, false);
+        }
+            */
+    }
+}
+#endif
+
+void delay(unsigned long count)
+{
+    vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
 }

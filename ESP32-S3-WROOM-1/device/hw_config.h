@@ -45,7 +45,17 @@
 
 // begin GPIO configuration
 #define HW_CONFIG_GPIO 1
+// number of GPIO interrupts supported
+#define GPIOS_INTERRUPTS 1
 
+#define USE_BUTTON_GPIO 1
+#define NUMBER_OF_BUTTONS 1U
+#define BUTTON_ACTIVE_HIGH 0u
+#define BUTTON_PIN 5U
+#define BUTTON_PORT 0
+
+#define LED_PIN 18U
+#define LED_PORT 0
 // end GPIO configuration
 
 #define HW_CONFIG_M4_FPU 0
@@ -55,7 +65,7 @@
 #define HW_CONFIG_ADC 0
 
 // begin SPI configuration
-#define HW_CONFIG_SPI 1
+#define HW_CONFIG_SPI 0
 #define AUTO_CS 1
 #define HW_CONFIG_SPI_NUM_BUS 1
 #define HW_CONFIG_SPI1_DEVICE_ID 1u
@@ -100,8 +110,8 @@
 #define SPI_DEVICE_3 3u
 #define SPI_DEVICE_4 4u
 
-#define HAS_ST7735 1U
-#define IS_AIPI 1U
+#define HAS_ST7735 0U
+#define IS_AIPI 0U
 #define ST7735_SPI_CS_PORT 0u
 #define ST7735_SPI_CS_PIN 15u
 #define ST7735_SPI_DC_PORT 0u
@@ -116,7 +126,7 @@
 #define HAS_LED_STRIP 1u
 #define STRIP_GPIO_NUM 46
 #else
-#define HAS_LED_STRIP 1u
+#define HAS_LED_STRIP 0u
 #define STRIP_GPIO_NUM 48
 #define ST7735_WIDTH 160
 #define ST7735_HEIGHT 128
@@ -129,7 +139,7 @@
 // end SPI configuration
 
 // begin I2C configuration
-#define HW_CONFIG_I2C 1U
+#define HW_CONFIG_I2C 0U
 #define I2C_BUS I2C_NUM_0
 #define HW_CONFIG_I2C_SDA_PORT 5
 #define HW_CONFIG_I2C_SCL_PORT 4
@@ -148,8 +158,11 @@
 // i2c devices
 #define HAS_PCF8574A 0u
 
-#define HAS_ES8311 1u
+#define HAS_ES8311 0u
 #define ES8311_I2C_ADDRESS 0x18
 #define ES8311_PA_ENABLE_GPIO 9
+
+// i2s devices
+#define HAS_ES8311_I2S 0u
 
 #endif /* HW_CONFIG_H_ */

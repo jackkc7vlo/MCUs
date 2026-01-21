@@ -47,6 +47,8 @@ extern "C"
 #include "device_gpio.h"
 #include "driver/gpio.h"
 #include <assert.h>
+#include <esp_attr.h>
+#include <esp_log.h>
 #include <gpio_hal.h>
 #include <hal/gpio_types.h>
 #include <hw_config.h>
@@ -85,25 +87,11 @@ extern "C"
     } gpio_hal_config_handle_t, *p_gpio_hal_config_handle_t;
 
     static gpio_hal_config_handle_t gpio_hal_config_port_a = {
-#if AUTO_CS == 1u
-        .bank[0] = {.pin_mask       = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN9_BIT | GPIO_PIN18_BIT),
-                    .direction_mask = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN9_BIT | GPIO_PIN18_BIT),
-                    //.pull_up_mask    = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN9_BIT | GPIO_PIN18_BIT),
-                    .pull_up_mask    = 0U,
-                    .pull_down_mask  = 0U,
-                    .open_drain_mask = 0U},
-#else
-        .bank[0] = {.pin_mask        = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN15_BIT | GPIO_PIN18_BIT),
-                    .direction_mask  = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN15_BIT | GPIO_PIN18_BIT),
-                    .pull_up_mask    = (GPIO_PIN3_BIT | GPIO_PIN7_BIT | GPIO_PIN15_BIT | GPIO_PIN18_BIT),
-                    .pull_down_mask  = 0U,
-                    .open_drain_mask = 0U},
-#endif
-        .bank[1] = {.pin_mask        = 0U, // GPIO_PIN48_BIT,
-                    .direction_mask  = 0U, // GPIO_PIN48_BIT,
-                    .pull_up_mask    = 0u, // GPIO_PIN48_BIT,
-                    .pull_down_mask  = 0U,
-                    .open_drain_mask = 0U}};
+
+        .bank[0] =
+            {.pin_mask = 0u, .direction_mask = 0u, .pull_up_mask = 0U, .pull_down_mask = 0U, .open_drain_mask = 0U},
+        .bank[1] = {
+            .pin_mask = 0U, .direction_mask = 0U, .pull_up_mask = 0u, .pull_down_mask = 0U, .open_drain_mask = 0U}};
 
     // forward declarations
     void    gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value);
@@ -114,21 +102,24 @@ extern "C"
 
     void gpio_hal_init(const void *p_handle);
 
-    static gpio_hal_t gpio_hal_port_a = {.config_handle     = (void *)&gpio_hal_config_port_a,
-                                         .p_device_gpio     = NULL,
-                                         .init              = &gpio_hal_init,
-                                         .set               = &gpio_hal_set_state,
-                                         .get               = &gpio_hal_get_state,
-                                         .toggle            = &gpio_hal_toggle_state,
-                                         .write             = &gpio_hal_write_port,
-                                         .read              = &gpio_hal_read_port,
-                                         .register_callback = NULL
-
-    };
+    static gpio_hal_t gpio_hal_port_a = {.config_handle    = (void *)&gpio_hal_config_port_a,
+                                         .p_device_gpio    = NULL,
+                                         .callback         = NULL,
+                                         .callback_context = NULL};
 
     /********************************************************************************
      * Functions
      ********************************************************************************/
+    static void IRAM_ATTR gpio_isr_handler(void *arg)
+    {
+        // callbacks[(int)arg]->
+        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)arg;
+        if (p_gpio_hal->callback != NULL)
+        {
+            p_gpio_hal->callback(p_gpio_hal->p_callback_handle, p_gpio_hal->callback_context);
+        }
+    }
+
     p_gpio_hal_t gpio_hal_create(uint32_t port)
     {
         (void)port;
@@ -137,42 +128,52 @@ extern "C"
 
     void gpio_hal_init(const void *p_handle)
     {
-        // assert(p_handle != NULL);
-        p_gpio_hal_t               p_gpio_hal = (p_gpio_hal_t)p_handle;
-        p_gpio_hal_config_handle_t p_config   = (p_gpio_hal_config_handle_t)p_gpio_hal->config_handle;
+        (void)p_handle;
+    }
 
-        for (uint32_t bank = 0; bank < 2u; bank++)
+    bool gpio_hal_pin_direction(const void *p_handle, uint8_t pin, pin_direction_t direction)
+    {
+        (void)p_handle;
+        gpio_set_direction(pin, (direction == OUTPUT) ? GPIO_MODE_INPUT_OUTPUT : GPIO_MODE_INPUT);
+        return true;
+
+    } /*lint !e818*/
+
+    bool gpio_hal_pin_mode(const void *p_handle, uint8_t pin, pin_mode_t value)
+    {
+        (void)p_handle;
+        switch (value)
         {
-            gpio_hal_config_bank_t *p_bank_config = &p_config->bank[bank];
-
-            for (uint32_t i = 0; i < 32u; i++)
-            {
-                if ((p_bank_config->pin_mask & (1u << i)) != 0u)
-                {
-                    uint8_t pin_number = (uint8_t)(i + (bank * 32u));
-                    gpio_reset_pin(pin_number);
-                    gpio_set_direction(pin_number, (p_bank_config->direction_mask & (1u << i)) != 0u ? GPIO_MODE_OUTPUT
-                                                                                                     : GPIO_MODE_INPUT);
-                    if ((p_bank_config->pull_up_mask & (1u << i)) != 0u)
-                    {
-                        gpio_set_pull_mode(pin_number, GPIO_PULLUP_ONLY);
-                    }
-                    else if ((p_bank_config->pull_down_mask & (1u << i)) != 0u)
-                    {
-                        gpio_set_pull_mode(pin_number, GPIO_PULLDOWN_ONLY);
-                    }
-                    else
-                    {
-                        gpio_set_pull_mode(pin_number, GPIO_FLOATING);
-                    }
-                    if ((p_bank_config->open_drain_mask & (1u << i)) != 0u)
-                    {
-                        // Open-drain not directly supported in ESP32 GPIO API
-                        // Custom handling may be required here
-                    }
-                }
-            }
+        case FLOAT:
+            gpio_set_pull_mode(pin, GPIO_FLOATING);
+            break;
+        case PULLUP:
+            gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY);
+            break;
+        case PULLDOWN:
+            gpio_set_pull_mode(pin, GPIO_PULLDOWN_ONLY);
+            break;
+        case OPENDRAIN:
+            // Open-drain not directly supported in ESP32 GPIO API
+            // Custom handling may be required here
+            break;
+        case PUSHPULL:
+            // Push-pull is the default mode for output pins
+            break;
+        default:
+            return false;
         }
+        return true;
+    }
+
+    bool gpio_hal_pin_speed(const void *p_handle, uint8_t pin, pin_speed_t value)
+    {
+
+        (void)p_handle;
+        (void)pin;
+        (void)value;
+        // ESP32 GPIO does not have direct speed settings; this is a placeholder
+        return true;
     }
 
     void gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value)
@@ -209,6 +210,43 @@ extern "C"
     {
         // p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
         return 0;
+    }
+
+    bool gpio_hal_register_callback(const void *p_handle, const void *p_callback_handle, uint8_t pin,
+                                    gpio_hal_interrupt_callback_t callback, void *p_callback_context, irq_edge_t edge)
+    {
+
+        if (p_handle == NULL || callback == NULL)
+        {
+            return false;
+        }
+        gpio_hal_t *p_gpio_hal        = (gpio_hal_t *)p_handle;
+        p_gpio_hal->callback          = callback;
+        p_gpio_hal->p_callback_handle = (void *)p_callback_handle;
+        esp_err_t err                 = ESP_OK;
+        if (edge == IRQ_POSITIVE)
+        {
+            err = gpio_set_intr_type(pin, GPIO_INTR_POSEDGE);
+        }
+        else if (edge == IRQ_NEGATIVE)
+        {
+            err = gpio_set_intr_type(pin, GPIO_INTR_NEGEDGE);
+        }
+        else if (edge == IRQ_BOTH)
+        {
+            err = gpio_set_intr_type(pin, GPIO_INTR_ANYEDGE);
+        }
+        else if (edge == IRQ_NONE)
+        {
+            err = gpio_set_intr_type(pin, GPIO_INTR_DISABLE);
+        }
+        ESP_LOGI("TAG", "err is %s", err == ESP_OK ? "ESP_OK" : "ESP_FAIL");
+        err = gpio_install_isr_service(0);
+        ESP_LOGI("TAG", "err is %s", err == ESP_OK ? "ESP_OK" : "ESP_FAIL");
+        err = gpio_isr_handler_add(pin, gpio_isr_handler, (void *)p_gpio_hal);
+        ESP_LOGI("TAG", "err is %s", err == ESP_OK ? "ESP_OK" : "ESP_FAIL");
+
+        return true;
     }
 #endif // HW_CONFIG_GPIO
 

@@ -16,7 +16,7 @@
  *
  ************************(C) COPYRIGHT 2025 Jack Wilson **********************/
 /**
- * @file gpio_hal.h
+ * @file gpio_hal.c
  * @brief Generic GPIO HAL interface definition.
  * @details Outlines the portable GPIO abstraction used to configure and interact with digital pins
  * on any supported platform.
