@@ -49,14 +49,17 @@ void button_callback(button_state_t button_state)
     // button_handle_t p_button_handle = (button_handle_t)p_button;
     if (button_state == BUTTON_PRESSED)
     {
-        gpio_hal_set_state(gpio_led_handle, LED_PIN, true);
-        // ESP_LOGI("TAG", "Button Pressed!");
+        gpio_hal_toggle_state(gpio_led_handle, LED_PIN);
     }
-    else
-    {
-        gpio_hal_set_state(gpio_led_handle, LED_PIN, false);
-        // ESP_LOGI("TAG", "Button Released!");
-    }
+    /*   {
+           gpio_hal_set_state(gpio_led_handle, LED_PIN, true);
+
+       }
+       else
+       {
+           gpio_hal_set_state(gpio_led_handle, LED_PIN, false);
+
+       } */
 }
 
 #if HAS_LED_STRIP == 1

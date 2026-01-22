@@ -47,6 +47,7 @@
 #define HW_CONFIG_GPIO 1
 // number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 1
+#define NUMBER_GPIOS_PORTS 1
 
 #define USE_BUTTON_GPIO 1
 #define NUMBER_OF_BUTTONS 1U
