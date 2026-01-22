@@ -73,8 +73,7 @@ extern "C"
 
     } button_handle_t;
 
-    button_handle_t buttons[] = {{.in_use = false, .p_gpio_hal = NULL, .pin = 0u, .p_callback = NULL},
-                                 {.in_use = false, .p_gpio_hal = NULL, .pin = 0u, .p_callback = NULL}};
+    button_handle_t buttons[NUMBER_OF_BUTTONS] = {0}; // initialize all to zero / not in use
 
 #if (NUMBER_OF_BUTTONS > 2U)
 #message("Error: NUMBER_OF_BUTTONS greater than 2 not supported")

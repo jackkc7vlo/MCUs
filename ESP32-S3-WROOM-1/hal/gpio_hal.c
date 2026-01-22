@@ -81,18 +81,18 @@ extern "C"
 
     typedef struct gpio_hal_config_handle
     {
-        gpio_hal_config_bank_t bank[2]; /**< Pin mask for GPIO pins (1 = valid pin, 0 =
-                              invalid pin) */
+        int i;
+        // gpio_hal_config_bank_t bank[2]; /**< Pin mask for GPIO pins (1 = valid pin, 0 = invalid pin) */
 
     } gpio_hal_config_handle_t, *p_gpio_hal_config_handle_t;
 
     static gpio_hal_config_handle_t gpio_hal_config_port_a = {
-
-        .bank[0] =
-            {.pin_mask = 0u, .direction_mask = 0u, .pull_up_mask = 0U, .pull_down_mask = 0U, .open_drain_mask = 0U},
-        .bank[1] = {
-            .pin_mask = 0U, .direction_mask = 0U, .pull_up_mask = 0u, .pull_down_mask = 0U, .open_drain_mask = 0U}};
-
+        .i = 0
+        //.bank[0] =
+        //    {.pin_mask = 0u, .direction_mask = 0u, .pull_up_mask = 0U, .pull_down_mask = 0U, .open_drain_mask = 0U},
+        //.bank[1] = {
+        //    .pin_mask = 0U, .direction_mask = 0U, .pull_up_mask = 0u, .pull_down_mask = 0U, .open_drain_mask = 0U}};
+    };
     // forward declarations
     void    gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value);
     bool    gpio_hal_get_state(const void *p_handle, uint8_t pin);
