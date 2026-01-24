@@ -86,10 +86,10 @@ static reg_gpio_t *p_device_gpio_b = ((reg_gpio_t *const)REG_GPIOB_BASE); // lin
 static reg_gpio_t *p_device_gpio_c = ((reg_gpio_t *const)REG_GPIOC_BASE); // lint !e844
 static reg_gpio_t *p_device_gpio_d = ((reg_gpio_t *const)REG_GPIOD_BASE); // lint !e844
 static reg_gpio_t *p_device_gpio_e = ((reg_gpio_t *const)REG_GPIOE_BASE); // lint !e844
-static reg_gpio_t *p_device_gpio_f = ((reg_gpio_t *const)REG_GPIOF_BASE); // lint !e844
-static reg_gpio_t *p_device_gpio_g = ((reg_gpio_t *const)REG_GPIOG_BASE); // lint !e844
+// static reg_gpio_t *p_device_gpio_f = ((reg_gpio_t *const)REG_GPIOF_BASE); // lint !e844
+// static reg_gpio_t *p_device_gpio_g = ((reg_gpio_t *const)REG_GPIOG_BASE); // lint !e844
 static reg_gpio_t *p_device_gpio_h = ((reg_gpio_t *const)REG_GPIOH_BASE); // lint !e844
-static reg_gpio_t *p_device_gpio_i = ((reg_gpio_t *const)REG_GPIOI_BASE); // lint !e844
+// static reg_gpio_t *p_device_gpio_i = ((reg_gpio_t *const)REG_GPIOI_BASE); // lint !e844
 
 #pragma GCC diagnostic pop
 

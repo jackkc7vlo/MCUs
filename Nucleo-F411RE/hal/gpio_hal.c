@@ -155,10 +155,6 @@ extern "C"
             return p_device_gpio_d;
         case GPIOE_PORT:
             return p_device_gpio_e;
-        case GPIOF_PORT:
-            return p_device_gpio_f;
-        case GPIOG_PORT:
-            return p_device_gpio_g;
         case GPIOH_PORT:
             return p_device_gpio_h;
         default:
