@@ -496,7 +496,7 @@ void app_main(void)
     if (gpio_led_handle != NULL)
     {
         gpio_hal_init(gpio_led_handle);
-        gpio_hal_pin_direction(gpio_led_handle, LED_PIN, OUTPUT);
+        gpio_hal_pin_direction(gpio_led_handle, LED_PIN, PIN_DIRECTION_OUTPUT);
     }
 #endif // HW_CONFIG_GPIO AND USE_BUTTON_GPIO
 

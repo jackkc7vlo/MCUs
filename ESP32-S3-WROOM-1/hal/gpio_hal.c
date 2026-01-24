@@ -61,8 +61,20 @@ extern "C"
      ********************************************************************************/
 
     /********************************************************************************
-     * Typedefs & Enums
+     * Private GPIO HAL struct (definition kept in the implementation file).
      ********************************************************************************/
+    struct gpio_hal
+    {
+        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t port_number;   /**< The GPIO port number */
+        void    *config_handle; /**< Pointer to platform-specific context passed to the
+                                   HAL implementation. */
+        void *p_device_gpio;    /**< Pointer to the GPIO port device registers. */
+
+        gpio_hal_interrupt_callback_t callback;          /**< Registered interrupt callback */
+        void                         *p_callback_handle; /**< Pointer to callback context (i.e. Button handle)*/
+        void                         *callback_context;  /**< User callback context */
+    };
 
     static gpio_hal_t gpio_hal_ports[NUMBER_GPIOS_PORTS] = {0};
 
@@ -75,7 +87,7 @@ extern "C"
     {
         // callbacks[(int)arg]->
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)arg;
-        if (p_gpio_hal->callback != NULL)
+        if (p_gpio_hal != NULL && p_gpio_hal->callback != NULL)
         {
             p_gpio_hal->callback(p_gpio_hal->p_callback_handle, p_gpio_hal->callback_context);
         }
@@ -103,20 +115,20 @@ extern "C"
         return NULL;
     } /*lint !e818*/
 
-    void gpio_hal_init(const void *p_handle)
+    void gpio_hal_init(p_gpio_hal_t p_handle)
     {
         (void)p_handle;
     }
 
-    bool gpio_hal_pin_direction(const void *p_handle, uint8_t pin, pin_direction_t direction)
+    bool gpio_hal_pin_direction(p_gpio_hal_t p_handle, uint8_t pin, pin_direction_t direction)
     {
         (void)p_handle;
-        gpio_set_direction(pin, (direction == OUTPUT) ? GPIO_MODE_INPUT_OUTPUT : GPIO_MODE_INPUT);
+        gpio_set_direction(pin, (direction == PIN_DIRECTION_OUTPUT) ? GPIO_MODE_INPUT_OUTPUT : GPIO_MODE_INPUT);
         return true;
 
     } /*lint !e818*/
 
-    bool gpio_hal_pin_mode(const void *p_handle, uint8_t pin, pin_mode_t value)
+    bool gpio_hal_pin_mode(p_gpio_hal_t p_handle, uint8_t pin, pin_mode_t value)
     {
         (void)p_handle;
         switch (value)
@@ -143,17 +155,18 @@ extern "C"
         return true;
     }
 
-    bool gpio_hal_pin_speed(const void *p_handle, uint8_t pin, pin_speed_t value)
+    bool gpio_hal_pin_speed(p_gpio_hal_t p_handle, uint8_t pin, pin_speed_t value)
+
     {
 
         (void)p_handle;
         (void)pin;
         (void)value;
-        // ESP32 GPIO does not have direct speed settings; this is a placeholder
+        /* ESP32 GPIO does not have direct speed settings; this is a placeholder */
         return true;
     }
 
-    void gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value)
+    void gpio_hal_set_state(p_gpio_hal_t p_handle, uint8_t pin, bool value)
     {
         (void)p_handle;
 
@@ -161,14 +174,14 @@ extern "C"
 
     } /*lint !e818*/
 
-    bool gpio_hal_get_state(const void *p_handle, uint8_t pin)
+    bool gpio_hal_get_state(p_gpio_hal_t p_handle, uint8_t pin)
     {
         (void)p_handle;
         return (gpio_get_level(pin)) != 0u;
 
     } /*lint !e818*/
 
-    void gpio_hal_toggle_state(const void *p_handle, uint8_t pin)
+    void gpio_hal_toggle_state(p_gpio_hal_t p_handle, uint8_t pin)
     {
         (void)p_handle;
         bool value = gpio_get_level(pin);
@@ -176,20 +189,21 @@ extern "C"
 
     } /*lint !e818*/
 
-    void gpio_hal_write_port(const void *p_handle, uint8_t value)
+    void gpio_hal_write_port(p_gpio_hal_t p_handle, uint8_t value)
     {
 
         (void)p_handle;
         (void)value;
     }
 
-    uint8_t gpio_hal_read_port(const void *p_handle)
+    uint8_t gpio_hal_read_port(p_gpio_hal_t p_handle)
     {
 
+        (void)p_handle;
         return 0;
     }
 
-    bool gpio_hal_register_callback(const void *p_handle, const void *p_callback_handle, uint8_t pin,
+    bool gpio_hal_register_callback(p_gpio_hal_t p_handle, const void *p_callback_handle, uint8_t pin,
                                     gpio_hal_interrupt_callback_t callback, void *p_callback_context, irq_edge_t edge)
     {
 
@@ -197,10 +211,9 @@ extern "C"
         {
             return false;
         }
-        gpio_hal_t *p_gpio_hal        = (gpio_hal_t *)p_handle;
-        p_gpio_hal->callback          = callback;
-        p_gpio_hal->p_callback_handle = (void *)p_callback_handle;
-        esp_err_t err                 = ESP_OK;
+        p_handle->callback          = callback;
+        p_handle->p_callback_handle = (void *)p_callback_handle;
+        esp_err_t err               = ESP_OK;
         if (edge == IRQ_POSITIVE)
         {
             err = gpio_set_intr_type(pin, GPIO_INTR_POSEDGE);
@@ -222,7 +235,7 @@ extern "C"
             err = gpio_install_isr_service(0);
             if (err == ESP_OK)
             {
-                err = gpio_isr_handler_add(pin, gpio_isr_handler, (void *)p_gpio_hal);
+                err = gpio_isr_handler_add(pin, gpio_isr_handler, (void *)p_handle);
             }
         }
         if (err != ESP_OK)
@@ -233,7 +246,6 @@ extern "C"
         return true;
     }
 #endif // HW_CONFIG_GPIO
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

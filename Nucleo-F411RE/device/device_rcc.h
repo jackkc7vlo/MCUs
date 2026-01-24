@@ -149,10 +149,8 @@ typedef struct
 static reg_rcc_t *p_device_rcc = (reg_rcc_t *const)(REG_RCC_BASE);
 // create RCC_AHB1ENR register
 // #define REG_RCC_AHB1ENR (*(volatile unsigned int *)(REG_RCC_BASE + 0x30U))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-
 static uint32_t *p_device_rcc_ahb1enr = (uint32_t *const)(REG_RCC_BASE + 0x30U);
+#pragma GCC diagnostic pop
 #define RCC_AHB1ENR_GPIOAEN_BIT (1u << 0U)
 #define RCC_AHB1ENR_GPIOBEN_BIT (1U << 1U)
 #define RCC_AHB1ENR_GPIOCEN_BIT (1U << 2U)
@@ -176,24 +174,41 @@ static uint32_t *p_device_rcc_apb1enr = (uint32_t *const)(REG_RCC_BASE + 0x40U);
 #define RCC_APB1ENR_TIM3EN_BIT (1U << 1U)
 #define RCC_APB1ENR_TIM4EN_BIT (1U << 2U)
 #define RCC_APB1ENR_TIM5EN_BIT (1U << 3U)
-#define RCC_APB1ENR_TIM6EN_BIT (1U << 4U)
-#define RCC_APB1ENR_TIM7EN_BIT (1U << 5U)
-#define RCC_APB1ENR_TIM12EN_BIT (1U << 6U)
-#define RCC_APB1ENR_TIM13EN_BIT (1U << 7U)
-#define RCC_APB1ENR_TIM14EN_BIT (1U << 8U)
+// #define RCC_APB1ENR_TIM6EN_BIT (1U << 4U)
+// #define RCC_APB1ENR_TIM7EN_BIT (1U << 5U)
+// #define RCC_APB1ENR_TIM12EN_BIT (1U << 6U)
+// #define RCC_APB1ENR_TIM13EN_BIT (1U << 7U)
+// #define RCC_APB1ENR_TIM14EN_BIT (1U << 8U)
 #define RCC_APB1ENR_WWDGEN_BIT (1U << 11U)
 #define RCC_APB1ENR_SPI2EN_BIT (1U << 14U)
 #define RCC_APB1ENR_SPI3EN_BIT (1U << 15U)
 #define RCC_APB1ENR_USART2EN_BIT (1U << 17U)
-#define RCC_APB1ENR_USART3EN_BIT (1U << 18U)
-#define RCC_APB1ENR_UART4EN_BIT (1U << 19U)
-#define RCC_APB1ENR_UART5EN_BIT (1U << 20U)
+// #define RCC_APB1ENR_USART3EN_BIT (1U << 18U)
+// #define RCC_APB1ENR_UART4EN_BIT (1U << 19U)
+// #define RCC_APB1ENR_UART5EN_BIT (1U << 20U)
 #define RCC_APB1ENR_I2C1EN_BIT (1U << 21U)
 #define RCC_APB1ENR_I2C2EN_BIT (1U << 22U)
 #define RCC_APB1ENR_I2C3EN_BIT (1U << 23U)
-#define RCC_APB1ENR_CAN1EN_BIT (1U << 25U)
-#define RCC_APB1ENR_CAN2EN_BIT (1U << 26U)
+// #define RCC_APB1ENR_CAN1EN_BIT (1U << 25U)
+// #define RCC_APB1ENR_CAN2EN_BIT (1U << 26U)
 #define RCC_APB1ENR_PWREN_BIT (1U << 28U)
-#define RCC_APB1ENR_DACEN_BIT (1U << 29U)
+// #define RCC_APB1ENR_DACEN_BIT (1U << 29U)
+
+#define RCC_APB2ENR_TIM1EN_BIT (1U)
+#define RCC_APB2ENR_USART1EN_BIT (1U << 4U)
+#define RCC_APB2ENR_USART6EN_BIT (1U << 5U)
+#define RCC_APB2ENR_ADC1EN_BIT (1U << 8U)
+// #define RCC_APB2ENR_ADC2EN_BIT (1U << 9U)
+// #define RCC_APB2ENR_ADC3EN_BIT (1U << 10U)
+#define RCC_APB2ENR_SDIODEN_BIT (1U << 11U)
+#define RCC_APB2ENR_SPI1EN_BIT (1U << 12U)
+#define RCC_APB2ENR_SPI4EN_BIT (1U << 13U)
+#define RCC_APB2ENR_SYSCFGEN_BIT (1U << 14U)
+#define RCC_APB2ENR_TIM9EN_BIT (1U << 16U)
+#define RCC_APB2ENR_TIM10EN_BIT (1U << 17U)
+#define RCC_APB2ENR_TIM11EN_BIT (1U << 18U)
+#define RCC_APB2ENR_SPI5EN_BIT (1U << 20U)
+
+#pragma GCC diagnostic pop
 
 #endif /* DEVICE_RCC_H */

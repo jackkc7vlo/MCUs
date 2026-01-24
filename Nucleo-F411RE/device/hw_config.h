@@ -44,9 +44,13 @@
 #define HW_CONFIG_H_
 
 #define HW_CONFIG_GPIO 1
-#define USE_PORTA_GPIO 1
+// number of GPIO interrupts supported
+#define GPIOS_INTERRUPTS 16
+#define NUMBER_GPIOS_PORTS 2
+
+#define USE_PORTA_GPIO 0
 #define USE_PORTB_GPIO 0
-#define USE_PORTC_GPIO 1
+#define USE_PORTC_GPIO 0
 #define USE_PORTD_GPIO 0
 #define USE_PORTE_GPIO 0
 #define USE_PORTF_GPIO 0

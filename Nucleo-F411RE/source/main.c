@@ -23,28 +23,33 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void delay(unsigned long);
+void                delay(unsigned long);
+static p_gpio_hal_t gpioa_handle = NULL;
+
+void button_callback(button_state_t button_state)
+{
+
+    if (button_state == BUTTON_PRESSED)
+    {
+        gpio_hal_toggle_state(gpioa_handle, LED_PIN);
+    }
+}
 
 int main(void)
 {
 
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
-    p_gpio_hal_t gpioa_handle = gpio_hal_create(GPIOA_PORT);
+    gpioa_handle = gpio_hal_create(GPIOA_PORT);
     if (gpioa_handle != NULL)
     {
         gpio_hal_init(gpioa_handle);
-        gpio_hal_pin_direction(gpioa_handle, LED_PIN, OUTPUT);
+        gpio_hal_pin_direction(gpioa_handle, LED_PIN, PIN_DIRECTION_OUTPUT);
     }
 #endif // HW_CONFIG_GPIO AND USE_LED_GPIO
 
 #if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
-    //    p_gpio_hal_t gpioc_handle = gpio_hal_create(GPIOC_PORT);
-    //    if (gpioc_handle != NULL)
-    //    {
-    //        gpio_hal_init(gpioc_handle);
-    //        gpio_hal_pin_direction(gpioc_handle, BUTTON_PIN, INPUT);
-    //    }
-    p_button_handle_t p_button_handle = drv_button_create(BUTTON_PORT, BUTTON_PIN, NULL);
+
+    p_button_handle_t p_button_handle = drv_button_create(BUTTON_PORT, BUTTON_PIN, button_callback);
     if (p_button_handle != NULL)
     {
         drv_button_init(p_button_handle);
@@ -55,9 +60,8 @@ int main(void)
     {
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1 && USE_BUTTON_GPIO == 1
         // If GPIO or LED or BUTTON not enabled, just loop
-        bool button_state = drv_button_is_pressed(p_button_handle);
+/*        bool button_state = drv_button_is_pressed(p_button_handle);
         if (button_state)
-        // if (gpio_hal_get_state(gpioc_handle, BUTTON_PIN))
         {
             gpio_hal_set_state(gpioa_handle, LED_PIN, true);
         }
@@ -65,6 +69,7 @@ int main(void)
         {
             gpio_hal_set_state(gpioa_handle, LED_PIN, false);
         }
+            */
 #endif // HW_CONFIG_GPIO AND USE_LED_GPIO AND USE_BUTTON_GPIO
         delay(100000);
     }
