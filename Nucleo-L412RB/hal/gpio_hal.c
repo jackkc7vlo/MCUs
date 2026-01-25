@@ -16,7 +16,7 @@
  *
  ************************(C) COPYRIGHT 2025 Jack Wilson **********************/
 /**
- * @file gpio_hal.c
+ * @file gpio_hal.h
  * @brief Generic GPIO HAL interface definition.
  * @details Outlines the portable GPIO abstraction used to configure and interact with digital pins
  * on any supported platform.
@@ -46,7 +46,9 @@ extern "C"
 #if HW_CONFIG_GPIO == 1
 
 #include <device_gpio.h>
+#include <device_irq.h>
 #include <device_rcc.h>
+#include <device_syscfg.h>
 #include <gpio_hal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -58,245 +60,197 @@ extern "C"
      * Defines
      ********************************************************************************/
 
-    /********************************************************************************
-     * Typedefs & Enums
-     ********************************************************************************/
-    //<! Pointer to an incomplete type (hides implementation)
-    typedef struct gpio_hal_config_handle
-    {
-        uint32_t pin_mask; /**< Pin mask for GPIO pins (1 = valid pin, 0 = invalid pin) */
-        uint32_t
-            moder_mask; /**< Direction mask for GPIO pins (0 = input, 1 = output, 2 = alternate function, 3 = analog) */
-        uint32_t pull_up_mask;    /**< Pull-up resistor mask for GPIO pins (1 = enabled, 0 = disabled) */
-        uint32_t pull_down_mask;  /**< Pull-down resistor mask for GPIO pins (1 = enabled, 0 =
-                                     disabled) */
-        uint32_t open_drain_mask; /**< Open-drain configuration mask for GPIO pins (1 = enabled, 0 =
-                                     disabled) */
-
-    } gpio_hal_config_handle_t, *p_gpio_hal_config_handle_t;
-
-#if USE_PORTA_GPIO == 1
-
-    static gpio_hal_config_handle_t gpio_hal_config_port_a = {.pin_mask        = 0u,
-                                                              .moder_mask      = 0u,
-                                                              .pull_up_mask    = 0u,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_a        = {
-                             .config_handle = (void *)&gpio_hal_config_port_a, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTA_GPIO
-#if USE_PORTB_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_b = {.pin_mask        = 0u,
-                                                              .moder_mask      = 0u,
-                                                              .pull_up_mask    = 0u,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_b        = {
-                             .config_handle = (void *)&gpio_hal_config_port_b, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTB_GPIO
-#if USE_PORTC_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_c = {.pin_mask        = 0u,
-                                                              .moder_mask      = 0u,
-                                                              .pull_up_mask    = 0u,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_c        = {
-                             .config_handle = (void *)&gpio_hal_config_port_c, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTC_GPIO
-#if USE_PORTD_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_d = {.pin_mask        = 0u,
-                                                              .moder_mask      = 0u,
-                                                              .pull_up_mask    = 0u,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_d        = {
-                             .config_handle = (void *)&gpio_hal_config_port_d, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTD_GPIO
-#if USE_PORTE_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_e = {.pin_mask        = 0u,
-                                                              .moder_mask      = 0x80u,
-                                                              .pull_up_mask    = 0u,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_e        = {
-                             .config_handle = (void *)&gpio_hal_config_port_e, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTE_GPIO
-#if USE_PORTF_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_f = {.pin_mask        = 0U,
-                                                              .moder_mask      = 0U,
-                                                              .pull_up_mask    = 0U,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_f        = {
-                             .config_handle = (void *)&gpio_hal_config_port_f, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTF_GPIO
-#if USE_PORTG_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_g = {.pin_mask        = 0U, // Set up PG1, PG2, PG3
-                                                              .direction_mask  = 0U,
-                                                              .pull_up_mask    = 0U,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_g        = {
-                             .config_handle = (void *)&gpio_hal_config_port_g, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTG_GPIO
-#if USE_PORTH_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_h = {.pin_mask        = 0U,
-                                                              .direction_mask  = 0U,
-                                                              .pull_up_mask    = 0U,
-                                                              .pull_down_mask  = 0x00000000u,
-                                                              .open_drain_mask = 0x00000000u};
-    static gpio_hal_t               gpio_hal_port_h        = {
-                             .config_handle = (void *)&gpio_hal_config_port_h, .p_device_gpio = NULL, .register_callback = NULL
-
-    };
-#endif // USE_PORTH_GPIO
+    // support for GPIO interrupt callbacks
+    typedef struct callback_context_s
+    {                                                    /**< The GPIO pin number */
+        gpio_hal_interrupt_callback_t callback;          /**< Registered interrupt callback */
+        void                         *p_callback_handle; /**< Pointer to callback context (i.e. Button handle)*/
+        void                         *callback_context;  /**< User callback context */
+    } callback_context_t;
 
     /********************************************************************************
-     * Functions
+     * Private GPIO HAL struct (definition kept in the implementation file).
      ********************************************************************************/
-    p_gpio_hal_t gpio_hal_create(uint32_t port) // setup GPIO HAL instance
+    struct gpio_hal
     {
-        switch (port)
+        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t port_number;   /**< The GPIO port number */
+        void    *config_handle; /**< Pointer to platform-specific context passed to the
+                                   HAL implementation. */
+        void *p_device_gpio;    /**< Pointer to the GPIO port device registers. */
+
+        callback_context_t callbacks[GPIOS_INTERRUPTS]; /**< Registered interrupt callbacks */
+
+        // gpio_hal_interrupt_callback_t callback;          /**< Registered interrupt callback */
+        // void                         *p_callback_handle; /**< Pointer to callback context (i.e. Button handle)*/
+        // void                         *callback_context;  /**< User callback context */
+    };
+
+    static gpio_hal_t gpio_hal_ports[NUMBER_GPIOS_PORTS] = {0};
+
+    /* Common EXTI handler for a range of pins */
+    static inline void handle_exti_range(uint8_t pin_start, uint8_t pin_end)
+    {
+        /* Read pending register once and mask to pin range */
+        uint32_t mask    = ((1U << (pin_end - pin_start + 1U)) - 1U) << pin_start;
+        uint32_t pending = p_device_exti->pr1 & mask;
+
+        if (pending == 0U)
         {
-#if USE_PORTA_GPIO == 1
-        case GPIOA_PORT:
-            gpio_hal_port_a.p_device_gpio = p_device_gpio_a;
-            return (p_gpio_hal_t)&gpio_hal_port_a;
-            break;
-#endif // USE_PORTA_GPIO
-#if USE_PORTB_GPIO == 1
-        case GPIOB_PORT:
-            gpio_hal_port_b.p_device_gpio = p_device_gpio_b;
-            return (p_gpio_hal_t)&gpio_hal_port_b;
-            break;
-#endif // USE_PORTB_GPIO
-#if USE_PORTC_GPIO == 1
-        case GPIOC_PORT:
-            gpio_hal_port_c.p_device_gpio = p_device_gpio_c;
-            return (p_gpio_hal_t)&gpio_hal_port_c;
-            break;
-#endif // USE_PORTC_GPIO
-#if USE_PORTD_GPIO == 1
-        case GPIOD_PORT:
-            gpio_hal_port_d.p_device_gpio = p_device_gpio_d;
-            return (p_gpio_hal_t)&gpio_hal_port_d;
-            break;
-#endif // USE_PORTD_GPIO
-#if USE_PORTE_GPIO == 1
-        case GPIOE_PORT:
-            gpio_hal_port_e.p_device_gpio = p_device_gpio_e;
-            return (p_gpio_hal_t)&gpio_hal_port_e;
-            break;
-#endif // USE_PORTE_GPIO
-#if USE_PORTF_GPIO == 1
-        case GPIOF_PORT:
-            gpio_hal_port_f.p_device_gpio = p_device_gpio_f;
-            return (p_gpio_hal_t)&gpio_hal_port_f;
-            break;
-#endif // USE_PORTF_GPIO
-#if USE_PORTG_GPIO == 1
-        case GPIOG_PORT:
-            gpio_hal_port_g.p_device_gpio = p_device_gpio_G;
-            return (p_gpio_hal_t)&gpio_hal_port_g;
-            break;
-#endif // USE_PORTG_GPIO
-#if USE_PORTF_GPIO == 1
-        case GPIOH_PORT:
-            gpio_hal_port_h.p_device_gpio = p_device_gpio_h;
-            return (p_gpio_hal_t)&gpio_hal_port_h;
-            break;
-#endif // USE_PORTH_GPIO
-        default:
-            return NULL;
-            break;
+            return; /* Early exit - no pending interrupts */
         }
 
-    } /*lint !e818*/
-
-    void gpio_hal_init(const void *p_handle)
-    {
-        // assert(p_handle != NULL);
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        // p_rcc->ahb1enr |= (1U << RCC_AHB1ENR_GPIOAEN_BIT); /* Enable GPIOA clock */
-        if (p_gpio_hal != NULL)
+        /* Iterate through pins, processing only those with pending interrupts */
+        for (uint32_t pin = pin_start; pin <= pin_end; pin++)
         {
+            if ((pending & (1U << pin)) == 0U)
+            {
+                continue; /* Skip non-pending pins */
+            }
 
-            p_device_rcc->ahb2enr |=
-#if USE_PORTA_GPIO == 1
-                RCC_AHB2ENR_GPIOAEN_BIT |
-#endif // USE_PORTA_GPIO
-#if USE_PORTB_GPIO == 1
-                RCC_AHB2ENR_GPIOBEN_BIT |
-#endif // USE_PORTB_GPIO
-#if USE_PORTC_GPIO == 1
-                RCC_AHB2ENR_GPIOCEN_BIT |
-#endif // USE_PORTC_GPIO
-#if USE_PORTD_GPIO == 1
-                RCC_AHB2ENR_GPIODEN_BIT |
-#endif // USE_PORTD_GPIO
-#if USE_PORTE_GPIO == 1
-                RCC_AHB2ENR_GPIOEEN_BIT |
-#endif // USE_PORTE_GPIO
-#if USE_PORTF_GPIO == 1
-                RCC_AHB2ENR_GPIOFEN_BIT |
-#endif // USE_PORTF_GPIO
-#if USE_PORTG_GPIO == 1
-                RCC_AHB2ENR_GPIOGEN_BIT |
-#endif // USE_PORTG_GPIO
-#if USE_PORTH_GPIO == 1
-                RCC_AHB2ENR_GPIOHEN_BIT |
-#endif // USE_PORTH_GPIO
-                0u;
+            /* Find the GPIO port that has a callback registered for this pin */
+            for (uint32_t j = 0; j < NUMBER_GPIOS_PORTS; j++)
+            {
+                p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)&gpio_hal_ports[j];
+
+                if (p_gpio_hal->callbacks[pin].callback != NULL && p_gpio_hal->in_use == true)
+                {
+                    /* Invoke the callback */
+                    p_gpio_hal->callbacks[pin].callback(p_gpio_hal->callbacks[pin].p_callback_handle,
+                                                        p_gpio_hal->callbacks[pin].callback_context);
+                    break; /* Each EXTI line maps to one port; stop searching */
+                }
+            }
+
+            /* Clear the pending bit by writing 1 */
+            p_device_exti->pr1 = (1U << pin);
         }
     }
 
-    /**
-    Bits 31:0MODE[15:0][1:0]: Port x configuration I/O pin y (y = 15 to 0)
-    These bits are written by software to configure the I/O mode.
-        00: Input mode
-        01: General purpose output mode
-        10: Alternate function mode
-        11: Analog mode (reset state)
-    */
-    bool gpio_hal_pin_direction(const void *p_handle, uint8_t pin, pin_direction_t direction)
+    void EXTI9_5_IRQHandler(void)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        handle_exti_range(5U, 9U);
+    }
+
+    void EXTI15_10_IRQHandler(void)
+    {
+        handle_exti_range(10U, 15U);
+    }
+
+    /********************************************************************************
+     * Typedefs & Enums
+     ********************************************************************************/
+
+    reg_gpio_t *get_gpio_registers(uint32_t port)
+    {
+        switch (port)
+        {
+        case GPIOA_PORT:
+            return p_device_gpio_a;
+        case GPIOB_PORT:
+            return p_device_gpio_b;
+        case GPIOC_PORT:
+            return p_device_gpio_c;
+        case GPIOD_PORT:
+            return p_device_gpio_d;
+        case GPIOE_PORT:
+            return p_device_gpio_e;
+        case GPIOH_PORT:
+            return p_device_gpio_h;
+        default:
+            assert(false); // invalid port
+            return NULL;
+        }
+    }
+
+    p_gpio_hal_t gpio_hal_create(uint32_t port)
+    {
+        p_gpio_hal_t p_free_slot = NULL;
+
+        /* Single pass: check for existing instance and track first free slot */
+        for (uint32_t i = 0; i < NUMBER_GPIOS_PORTS; i++)
+        {
+            if (gpio_hal_ports[i].in_use == true)
+            {
+                if (gpio_hal_ports[i].port_number == port)
+                {
+                    return (p_gpio_hal_t)&gpio_hal_ports[i]; /* Return existing */
+                }
+            }
+            else if (p_free_slot == NULL)
+            {
+                p_free_slot = (p_gpio_hal_t)&gpio_hal_ports[i]; /* Track first free */
+            }
+        }
+
+        /* Initialize free slot if found */
+        if (p_free_slot != NULL)
+        {
+            p_free_slot->in_use        = true;
+            p_free_slot->port_number   = port;
+            p_free_slot->p_device_gpio = get_gpio_registers(port);
+        }
+
+        return p_free_slot;
+    } /*lint !e818*/
+
+    void gpio_hal_init(p_gpio_hal_t p_handle)
+    {
+
+        if (p_handle != NULL)
+        {
+            switch (p_handle->port_number)
+            {
+            case GPIOA_PORT:
+                p_device_rcc->ahb2enr |= RCC_AHB2ENR_GPIOAEN_BIT;
+                break;
+            case GPIOB_PORT:
+                p_device_rcc->ahb2enr |= RCC_AHB2ENR_GPIOBEN_BIT;
+                break;
+            case GPIOC_PORT:
+                p_device_rcc->ahb2enr |= RCC_AHB2ENR_GPIOCEN_BIT;
+                break;
+            case GPIOD_PORT:
+                p_device_rcc->ahb2enr |= RCC_AHB2ENR_GPIODEN_BIT;
+                break;
+            case GPIOE_PORT:
+                p_device_rcc->ahb2enr |= RCC_AHB2ENR_GPIOEEN_BIT;
+                break;
+            case GPIOH_PORT:
+                p_device_rcc->ahb2enr |= RCC_AHB2ENR_GPIOHEN_BIT;
+                break;
+            default:
+                assert(false); // invalid port
+                break;
+            }
+        }
+    }
+
+    bool gpio_hal_pin_direction(p_gpio_hal_t p_handle, uint8_t pin, pin_direction_t value)
+    {
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
 
         if (p_gpio != NULL)
         {
-            p_gpio->moder &= ~(3U << (2U * pin)); // Clear moder bits
-            switch (direction)
-            {
-            case INPUT:
-                break; // bits already cleared
-            case OUTPUT:
-                p_gpio->moder |= (1U << (2U * pin)); // Set least significant bit
-                break;
-            case ALT:
-                p_gpio->moder |= (2U << (2U * pin)); // Set most significant bit
-                break;
-            case ANALOG:
-                p_gpio->moder |= (3U << (2U * pin)); // Set most significant bit
-                break;
+            uint32_t shift = 2U * pin;
+            uint32_t temp  = p_gpio->moder & ~(3U << shift);
 
+            switch (value)
+            {
+            case PIN_DIRECTION_INPUT:
+                p_gpio->moder = temp;
+                break;
+            case PIN_DIRECTION_OUTPUT:
+                p_gpio->moder = temp | (1U << shift);
+                break;
+            case PIN_DIRECTION_ALT:
+                p_gpio->moder = temp | (2U << shift);
+                break;
+            case PIN_DIRECTION_ANALOG:
+                p_gpio->moder = temp | (3U << shift);
+                break;
             default:
                 return false;
-                break;
             }
         }
         return true;
@@ -318,25 +272,27 @@ extern "C"
     1: Output open-drain
     */
 
-    bool gpio_hal_pin_mode(const void *p_handle, uint8_t pin, pin_mode_t value)
+    bool gpio_hal_pin_mode(p_gpio_hal_t p_handle, uint8_t pin, pin_mode_t value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
 
         if (p_gpio != NULL)
         {
+            uint32_t shift = 2U * pin;
+            uint32_t temp;
+
             switch (value)
             {
             case FLOAT:
-                p_gpio->pupdr &= ~(3U << (2U * pin)); // Clear pull-up/pull-down bits
+                p_gpio->pupdr &= ~(3U << shift);
                 break;
             case PULLUP:
-                p_gpio->pupdr &= ~(3U << (2U * pin)); // Clear pull-up/pull-down bits
-                p_gpio->pupdr |= (1U << (2U * pin));  // Set least significant bit
+                temp          = p_gpio->pupdr & ~(3U << shift);
+                p_gpio->pupdr = temp | (1U << shift);
                 break;
             case PULLDOWN:
-                p_gpio->pupdr &= ~(3U << (2U * pin)); // Clear pull-up/pull-down bits
-                p_gpio->pupdr |= (2U << (2U * pin));  // Set most significant bit
+                temp          = p_gpio->pupdr & ~(3U << shift);
+                p_gpio->pupdr = temp | (2U << shift);
                 break;
             case OPENDRAIN:
                 p_gpio->otype |= (1U << pin);
@@ -344,112 +300,177 @@ extern "C"
             case PUSHPULL:
                 p_gpio->otype &= ~(1U << pin);
                 break;
-
             default:
                 return false;
-                break;
             }
         }
         return true;
     }
 
     /*
-   GPIO port output speed register (GPIOx_OSPEEDR)
-   Bits 2y:2y+1 OSPEEDRy[1:0]: Port x configuration bits (y = 0..15)
-   These bits are written by software to configure the I/O output speed.
-       00: Low speed
-       01: Medium speed
-       10: Fast speed
-       11: High speed
-   Note: Refer to the product datasheets for the values of OSPEEDRy bits versus VDD
-   range and external load.
-   */
-    bool gpio_hal_pin_speed(const void *p_handle, uint8_t pin, pin_speed_t value)
+    GPIO port output speed register (GPIOx_OSPEEDR)
+    Bits 2y:2y+1 OSPEEDRy[1:0]: Port x configuration bits (y = 0..15)
+    These bits are written by software to configure the I/O output speed.
+        00: Low speed
+        01: Medium speed
+        10: Fast speed
+        11: High speed
+    Note: Refer to the product datasheets for the values of OSPEEDRy bits versus VDD
+    range and external load.
+    */
+    bool gpio_hal_pin_speed(p_gpio_hal_t p_handle, uint8_t pin, pin_speed_t value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
 
         if (p_gpio != NULL)
         {
+            uint32_t shift = 2U * pin;
+            uint32_t temp  = p_gpio->ospeedr & ~(3U << shift);
 
-            p_gpio->ospeedr &= ~(3U << (2U * pin)); // Clear ospeedr bits
             switch (value)
             {
             case LOWSPEED:
-                break; // bits already cleared
+                p_gpio->ospeedr = temp;
+                break;
             case MEDIUMSPEED:
-                p_gpio->ospeedr |= (1U << (2U * pin)); // Set least significant bit
+                p_gpio->ospeedr = temp | (1U << shift);
                 break;
             case FASTSPEED:
-                p_gpio->ospeedr |= (2U << (2U * pin)); // Set most significant bit
+                p_gpio->ospeedr = temp | (2U << shift);
                 break;
             case HIGHSPEED:
-                p_gpio->ospeedr |= (3U << (2U * pin)); // Set both bits
+                p_gpio->ospeedr = temp | (3U << shift);
                 break;
-
             default:
                 return false;
-                break;
             }
         }
         return true;
     }
 
-    void gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value)
+    void gpio_hal_set_state(p_gpio_hal_t p_handle, uint8_t pin, bool value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+        /* Use BSRR for atomic set/reset - no read-modify-write needed */
         if (value)
         {
-            p_gpio->odr |= (1U << pin);
+            p_gpio->bsrr = (1U << pin); /* Set bit */
         }
         else
         {
-            p_gpio->odr &= ~(1U << pin);
+            p_gpio->bsrr = (1U << (pin + 16U)); /* Reset bit */
         }
     }
 
-    bool gpio_hal_get_state(const void *p_handle, uint8_t pin)
+    bool gpio_hal_get_state(p_gpio_hal_t p_handle, uint8_t pin)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        uint32_t     mode       = p_gpio->moder & (3U << (2U * pin)) >> (3U << (2U * pin));
-        switch (mode)
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+        uint32_t    mode   = (p_gpio->moder >> (2U * pin)) & 3U;
+
+        if (mode == PIN_DIRECTION_INPUT)
         {
-        case INPUT:
             return (p_gpio->idr & (1U << pin)) != 0u;
-            break;
-        case OUTPUT:
+        }
+        else if (mode == PIN_DIRECTION_OUTPUT)
+        {
             return (p_gpio->odr & (1U << pin)) != 0u;
-            break;
         }
 
         return false;
-
     } /*lint !e818*/
 
-    void gpio_hal_toggle_state(const void *p_handle, uint8_t pin)
+    void gpio_hal_toggle_state(p_gpio_hal_t p_handle, uint8_t pin)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
         p_gpio->odr ^= (1U << pin);
 
     } /*lint !e818*/
 
-    void gpio_hal_write_port(const void *p_handle, uint8_t value)
+    void gpio_hal_write_port(p_gpio_hal_t p_handle, uint8_t value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        p_gpio->odr             = (uint32_t)value;
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+        p_gpio->odr        = (uint32_t)value;
     }
 
-    uint8_t gpio_hal_read_port(const void *p_handle)
+    uint8_t gpio_hal_read_port(p_gpio_hal_t p_handle)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
         return (p_gpio->odr & 0xFFu);
     }
 
+    bool gpio_hal_register_callback(p_gpio_hal_t p_handle, const void *p_callback_handle, uint8_t pin,
+                                    gpio_hal_interrupt_callback_t callback, void *p_callback_context, irq_edge_t edge)
+    {
+
+        if (p_handle == NULL || callback == NULL)
+        {
+            return false;
+        }
+        p_handle->callbacks[pin].callback          = callback;
+        p_handle->callbacks[pin].p_callback_handle = (void *)p_callback_handle;
+        p_handle->callbacks[pin].callback_context  = p_callback_context;
+
+        // p_handle->irq_edge          = edge;
+
+        p_device_rcc->apb2enr |= RCC_APB2ENR_SYSCFGEN_BIT;
+        p_device_syscfg->exticr[pin / 4U] &= ~(0x0FU << (4U * (pin % 4U))); // Clear EXTI configuration bits for the pin
+        p_device_syscfg->exticr[pin / 4U] |=
+            ((p_handle->port_number & 0x0FU) << (4U * (pin % 4U))); // Set EXTI configuration bits for the pin
+        p_device_exti->imr1 |= (1U << pin);                         // Unmask interrupt for the pin
+        switch (edge)
+        {
+        case IRQ_POSITIVE:
+            p_device_exti->rtsr1 |= (1U << pin);  // Enable rising edge trigger
+            p_device_exti->ftsr1 &= ~(1U << pin); // Disable falling edge trigger
+            break;
+        case IRQ_NEGATIVE:
+            p_device_exti->ftsr1 |= (1U << pin);  // Enable falling edge trigger
+            p_device_exti->rtsr1 &= ~(1U << pin); // Disable rising edge trigger
+            break;
+        case IRQ_BOTH:
+            p_device_exti->rtsr1 |= (1U << pin); // Enable rising edge trigger
+            p_device_exti->ftsr1 |= (1U << pin); // Enable falling edge trigger
+            break;
+        default:
+            return false;
+            break;
+            ;
+        }
+        if (pin == 0U)
+        {
+            NVIC_EnableIRQ(EXTI0_IRQN);
+        }
+        else if (pin == 1U)
+        {
+            NVIC_EnableIRQ(EXTI1_IRQN);
+        }
+        else if (pin == 2U)
+        {
+            NVIC_EnableIRQ(EXTI2_IRQN);
+        }
+        else if (pin == 3U)
+        {
+            NVIC_EnableIRQ(EXTI3_IRQN);
+        }
+        else if (pin == 4U)
+        {
+            NVIC_EnableIRQ(EXTI4_IRQN);
+        }
+        else if (pin <= 9U)
+        {
+            NVIC_EnableIRQ(EXTI9_5_IRQN);
+        }
+        else if (pin <= 15U)
+        {
+            NVIC_EnableIRQ(EXTI15_10_IRQN);
+        }
+        else
+        {
+            return false; // invalid pin
+        }
+
+        return true;
+    }
 #endif // HW_CONFIG_GPIO
 
 #ifdef __cplusplus

@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../hal_include"
+		},
+		{
+			"path": "../drivers"
 		}
 	],
 	"settings": {

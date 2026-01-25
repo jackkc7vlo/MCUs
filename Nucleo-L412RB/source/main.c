@@ -18,32 +18,50 @@
 
 #include "device_gpio.h"
 #include "device_rcc.h"
+#include "drv_button.h"
 #include "gpio_hal.h"
 #include <stddef.h>
 #include <stdint.h>
 
-void delay(unsigned long);
+void                delay(unsigned long);
+static p_gpio_hal_t gpiob_handle = NULL;
+
+void button_callback(button_state_t button_state)
+{
+
+    if (button_state == BUTTON_PRESSED)
+    {
+        gpio_hal_toggle_state(gpiob_handle, LED_PIN);
+    }
+}
 
 int main(void)
 {
 
-    p_gpio_hal_t gpiob_handle = gpio_hal_create(GPIOB_PORT);
+#if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
+    gpiob_handle = gpio_hal_create(LED_PORT);
     if (gpiob_handle != NULL)
     {
         gpio_hal_init(gpiob_handle);
-        gpio_hal_pin_direction(gpiob_handle, LED_PIN, OUTPUT);
+        gpio_hal_pin_direction(gpiob_handle, LED_PIN, PIN_DIRECTION_OUTPUT);
     }
+#endif // HW_CONFIG_GPIO AND USE_LED_GPIO
 
-    p_gpio_hal_t gpioc_handle = gpio_hal_create(GPIOC_PORT);
-    if (gpioc_handle != NULL)
+#if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
+
+    p_button_handle_t p_button_handle = drv_button_create(BUTTON_PORT, BUTTON_PIN, button_callback);
+    if (p_button_handle != NULL)
     {
-        gpio_hal_init(gpioc_handle);
-        gpio_hal_pin_direction(gpioc_handle, BUTTON_PIN, INPUT);
+        drv_button_init(p_button_handle);
     }
+#endif // HW_CONFIG_GPIO AND USE_BUTTON_GPIO
 
     for (;;)
     {
-        if (gpio_hal_get_state(gpioc_handle, BUTTON_PIN))
+#if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1 && USE_BUTTON_GPIO == 1
+        // If GPIO or LED or BUTTON not enabled, just loop
+        /*bool button_state = drv_button_is_pressed(p_button_handle);
+        if (button_state)
         {
             gpio_hal_set_state(gpiob_handle, LED_PIN, true);
         }
@@ -51,6 +69,9 @@ int main(void)
         {
             gpio_hal_set_state(gpiob_handle, LED_PIN, false);
         }
+            */
+
+#endif // HW_CONFIG_GPIO AND USE_LED_GPIO AND USE_BUTTON_GPIO
         delay(100000);
     }
 }

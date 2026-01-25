@@ -44,17 +44,28 @@
 #define HW_CONFIG_H_
 
 #define HW_CONFIG_GPIO 1
+
+#define HW_CONFIG_GPIO 1
+// number of GPIO interrupts supported
+#define GPIOS_INTERRUPTS 16
+#define NUMBER_GPIOS_PORTS 2
+
 #define USE_PORTA_GPIO 0
-#define USE_PORTB_GPIO 1
-#define USE_PORTC_GPIO 1
+#define USE_PORTB_GPIO 0
+#define USE_PORTC_GPIO 0
 #define USE_PORTD_GPIO 0
 #define USE_PORTE_GPIO 0
 #define USE_PORTF_GPIO 0
 #define USE_PORTG_GPIO 0
 #define USE_PORTH_GPIO 0
 
+#define USE_LED_GPIO 1
 #define LED_PIN 13
 #define LED_PORT GPIOB_PORT
+
+#define USE_BUTTON_GPIO 1
+#define NUMBER_OF_BUTTONS 1U
+#define BUTTON_ACTIVE_HIGH 0
 #define BUTTON_PIN 13
 #define BUTTON_PORT GPIOC_PORT
 
