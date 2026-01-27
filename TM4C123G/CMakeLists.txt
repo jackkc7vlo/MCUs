@@ -31,11 +31,11 @@ message(STATUS "CMAKE_TOOLCHAIN_FILE is: ${CMAKE_TOOLCHAIN_FILE}")
 #headers
 set(PROJECT_INCLUDE_DIRECTORIES
    ${MCU_DIRECTORY}/include
-   ${MCU_DIRECTORY}/hal
+   ${TOP_DIRECTORY}/hal_include
    ${MCU_DIRECTORY}/device
    ${TOP_DIRECTORY}/CMSIS
    ${TOP_DIRECTORY}/CMSIS/Core/Include
-   ${TOP_DIRECTORY}/hal_include
+   ${TOP_DIRECTORY}/drivers
 #   ${TOP_DIRECTORY}/Common/RTT
 #   ${TOP_DIRECTORY}/Common/hal_include
 #   ${TOP_DIRECTORY}/Common/os_hal_include
@@ -49,6 +49,7 @@ file(GLOB_RECURSE SRC_FILES
    ${MCU_DIRECTORY}/source/*.c
    ${MCU_DIRECTORY}/hal/*.c
    ${MCU_DIRECTORY}/device/*.c
+   ${TOP_DIRECTORY}/drivers/*.c
 #   ${MCU_DIRECTORY}/os_hal/*.c
 #   ${MCU_DIRECTORY}/TagCode/Source/*.c
 #   ${TOP_DIRECTORY}/Common/RTT/*.c

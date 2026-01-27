@@ -53,6 +53,8 @@ extern "C"
 #include <stdlib.h> /*lint -e129*/
 
 #include <assert.h>
+#include <device_irq.h>
+#include <tm4c123gh6pm.h>
 
     /********************************************************************************
      * Defines
@@ -61,215 +63,193 @@ extern "C"
     /********************************************************************************
      * Typedefs & Enums
      ********************************************************************************/
-    //<! Pointer to an incomplete type (hides implementation)
-    typedef struct gpio_hal_config_handle
+
+    // support for GPIO interrupt callbacks
+    typedef struct callback_context_s
+    {                                                    /**< The GPIO pin number */
+        gpio_hal_interrupt_callback_t callback;          /**< Registered interrupt callback */
+        void                         *p_callback_handle; /**< Pointer to callback context (i.e. Button handle)*/
+        void                         *callback_context;  /**< User callback context */
+    } callback_context_t;
+
+    /********************************************************************************
+     * Private GPIO HAL struct (definition kept in the implementation file).
+     ********************************************************************************/
+    struct gpio_hal
     {
-        uint32_t pin_mask;        /**< Pin mask for GPIO pins (1 = valid pin, 0 = invalid pin) */
-        uint32_t direction_mask;  /**< Direction mask for GPIO pins (1 = output, 0 = input) */
-        uint32_t pull_up_mask;    /**< Pull-up resistor mask for GPIO pins (1 = enabled, 0 = disabled) */
-        uint32_t pull_down_mask;  /**< Pull-down resistor mask for GPIO pins (1 = enabled, 0 =
-                                     disabled) */
-        uint32_t open_drain_mask; /**< Open-drain configuration mask for GPIO pins (1 = enabled, 0 =
-                                     disabled) */
+        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t port_number;   /**< The GPIO port number */
+        void    *config_handle; /**< Pointer to platform-specific context passed to the
+                                   HAL implementation. */
+        void *p_device_gpio;    /**< Pointer to the GPIO port device registers. */
 
-    } gpio_hal_config_handle_t, *p_gpio_hal_config_handle_t;
+        callback_context_t callbacks[GPIOS_INTERRUPTS]; /**< Registered interrupt callbacks */
 
-    // forward declarations
-    void    gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value);
-    bool    gpio_hal_get_state(const void *p_handle, uint8_t pin);
-    void    gpio_hal_toggle_state(const void *p_handle, uint8_t pin);
-    void    gpio_hal_write_port(const void *p_handle, uint8_t value);
-    uint8_t gpio_hal_read_port(const void *p_handle);
-    void    gpio_hal_init(const void *p_handle);
-
-#if USE_PORTA_GPIO == 1
-
-    static gpio_hal_config_handle_t gpio_hal_config_port_a = {
-        .pin_mask = 0u,        // | GPIO_PIN6_BIT | GPIO_PIN5_BIT | GPIO_PIN4_BIT | GPIO_PIN3_BIT |
-                               // GPIO_PIN2_BIT | GPIO_PIN1_BIT | GPIO_PIN0_BIT,
-        .direction_mask  = 0u, // Set PIO0_7 as output
-        .pull_up_mask    = 0u,
-        .pull_down_mask  = 0x00000000u,
-        .open_drain_mask = 0x00000000u};
-    static gpio_hal_t gpio_hal_port_a = {.config_handle     = (void *)&gpio_hal_config_port_a,
-                                         .p_device_gpio     = NULL,
-                                         .init              = &gpio_hal_init,
-                                         .set               = &gpio_hal_set_state,
-                                         .get               = &gpio_hal_get_state,
-                                         .toggle            = &gpio_hal_toggle_state,
-                                         .register_callback = NULL
-
+        // gpio_hal_interrupt_callback_t callback;          /**< Registered interrupt callback */
+        // void                         *p_callback_handle; /**< Pointer to callback context (i.e. Button handle)*/
+        // void                         *callback_context;  /**< User callback context */
     };
-#endif // USE_PORTA_GPIO
-#if USE_PORTB_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_b = {
-        .pin_mask = 0u,        // | GPIO_PIN6_BIT | GPIO_PIN5_BIT | GPIO_PIN4_BIT | GPIO_PIN3_BIT |
-                               // GPIO_PIN2_BIT | GPIO_PIN1_BIT | GPIO_PIN0_BIT,
-        .direction_mask  = 0u, // Set PIO0_7 as output
-        .pull_up_mask    = 0u,
-        .pull_down_mask  = 0x00000000u,
-        .open_drain_mask = 0x00000000u};
-    static gpio_hal_t gpio_hal_port_b = {.config_handle     = (void *)&gpio_hal_config_port_b,
-                                         .p_device_gpio     = NULL,
-                                         .init              = &gpio_hal_init,
-                                         .set               = &gpio_hal_set_state,
-                                         .get               = &gpio_hal_get_state,
-                                         .toggle            = &gpio_hal_toggle_state,
-                                         .register_callback = NULL
 
-    };
-#endif // USE_PORTB_GPIO
-#if USE_PORTC_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_c = {
-        .pin_mask = 0u,        // | GPIO_PIN6_BIT | GPIO_PIN5_BIT | GPIO_PIN4_BIT | GPIO_PIN3_BIT |
-                               // GPIO_PIN2_BIT | GPIO_PIN1_BIT | GPIO_PIN0_BIT,
-        .direction_mask  = 0u, // Set PIO0_7 as output
-        .pull_up_mask    = 0u,
-        .pull_down_mask  = 0x00000000u,
-        .open_drain_mask = 0x00000000u};
-    static gpio_hal_t gpio_hal_port_c = {.config_handle     = (void *)&gpio_hal_config_port_c,
-                                         .p_device_gpio     = NULL,
-                                         .init              = &gpio_hal_init,
-                                         .set               = &gpio_hal_set_state,
-                                         .get               = &gpio_hal_get_state,
-                                         .toggle            = &gpio_hal_toggle_state,
-                                         .register_callback = NULL
-
-    };
-#endif // USE_PORTC_GPIO
-#if USE_PORTD_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_d = {
-        .pin_mask = 0u,        // | GPIO_PIN6_BIT | GPIO_PIN5_BIT | GPIO_PIN4_BIT | GPIO_PIN3_BIT |
-                               // GPIO_PIN2_BIT | GPIO_PIN1_BIT | GPIO_PIN0_BIT,
-        .direction_mask  = 0u, // Set PIO0_7 as output
-        .pull_up_mask    = 0u,
-        .pull_down_mask  = 0x00000000u,
-        .open_drain_mask = 0x00000000u};
-    static gpio_hal_t gpio_hal_port_d = {.config_handle     = (void *)&gpio_hal_config_port_d,
-                                         .p_device_gpio     = NULL,
-                                         .init              = &gpio_hal_init,
-                                         .set               = &gpio_hal_set_state,
-                                         .get               = &gpio_hal_get_state,
-                                         .toggle            = &gpio_hal_toggle_state,
-                                         .register_callback = NULL
-
-    };
-#endif // USE_PORTD_GPIO
-#if USE_PORTE_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_e = {
-        .pin_mask = 0u,        // | GPIO_PIN6_BIT | GPIO_PIN5_BIT | GPIO_PIN4_BIT | GPIO_PIN3_BIT |
-                               // GPIO_PIN2_BIT | GPIO_PIN1_BIT | GPIO_PIN0_BIT,
-        .direction_mask  = 0u, // Set PIO0_7 as output
-        .pull_up_mask    = 0u,
-        .pull_down_mask  = 0x00000000u,
-        .open_drain_mask = 0x00000000u};
-    static gpio_hal_t gpio_hal_port_e = {.config_handle     = (void *)&gpio_hal_config_port_e,
-                                         .p_device_gpio     = NULL,
-                                         .init              = &gpio_hal_init,
-                                         .set               = &gpio_hal_set_state,
-                                         .get               = &gpio_hal_get_state,
-                                         .toggle            = &gpio_hal_toggle_state,
-                                         .register_callback = NULL
-
-    };
-#endif // USE_PORTE_GPIO
-#if USE_PORTF_GPIO == 1
-    static gpio_hal_config_handle_t gpio_hal_config_port_f = {
-        .pin_mask        = (GPIO_PIN1_BIT | GPIO_PIN2_BIT | GPIO_PIN3_BIT), // Set up PF1, PF2, PF3
-        .direction_mask  = (GPIO_PIN1_BIT | GPIO_PIN2_BIT | GPIO_PIN3_BIT),
-        .pull_up_mask    = (GPIO_PIN1_BIT | GPIO_PIN2_BIT | GPIO_PIN3_BIT),
-        .pull_down_mask  = 0x00000000u,
-        .open_drain_mask = 0x00000000u};
-    static gpio_hal_t gpio_hal_port_f = {.config_handle     = (void *)&gpio_hal_config_port_f,
-                                         .p_device_gpio     = NULL,
-                                         .init              = &gpio_hal_init,
-                                         .set               = &gpio_hal_set_state,
-                                         .get               = &gpio_hal_get_state,
-                                         .write             = &gpio_hal_write_port,
-                                         .read              = &gpio_hal_read_port,
-                                         .toggle            = &gpio_hal_toggle_state,
-                                         .register_callback = NULL
-
-    };
-#endif // USE_PORTF_GPIO
+    static gpio_hal_t gpio_hal_ports[NUMBER_GPIOS_PORTS] = {0};
 
     /********************************************************************************
      * Functions
      ********************************************************************************/
-    p_gpio_hal_t gpio_hal_create(uint32_t port) // setup GPIO HAL instance
+    static inline void handle_irq(uint8_t pin)
+    {
+
+        p_gpio_hal_t p_handle = &gpio_hal_ports[0];
+        reg_gpio_t  *p_gpio   = (reg_gpio_t *)p_handle->p_device_gpio;
+        // uint32_t     pending  = p_gpio->is;
+
+        // Clear the interrupt
+
+        // Call the registered callback
+        if (p_handle->callbacks[pin].callback != NULL)
+        {
+            p_handle->callbacks[pin].callback(p_handle->callbacks[pin].p_callback_handle,
+                                              p_handle->callbacks[pin].callback_context);
+        }
+        // NVIC_ClearPendingIRQ(PIO0_0_IRQn + pin);
+        if (p_gpio->mis & (1 << 4))
+        {
+            p_gpio->icr |= (1U << pin);
+        }
+        // p_gpio->icr |= (1U << pin);
+/*        if (GPIO_PORTF_MIS_R & (1 << 4))
+        {
+            GPIO_PORTF_ICR_R = (1 << 4); // Clear interrupt
+
+            // ---- Your button handling code here ----
+        }
+            */
+#if 0        
+        /* Read pending register once and mask to pin range */
+        uint32_t mask    = ((1U << (pin_end - pin_start + 1U)) - 1U) << pin_start;
+        uint32_t pending = p_device_exti->pr & mask;
+
+        if (pending == 0U)
+        {
+            return; /* Early exit - no pending interrupts */
+        }
+
+        /* Iterate through pins, processing only those with pending interrupts */
+        for (uint32_t pin = pin_start; pin <= pin_end; pin++)
+        {
+            if ((pending & (1U << pin)) == 0U)
+            {
+                continue; /* Skip non-pending pins */
+            }
+
+            /* Find the GPIO port that has a callback registered for this pin */
+            for (uint32_t j = 0; j < NUMBER_GPIOS_PORTS; j++)
+            {
+                p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)&gpio_hal_ports[j];
+
+                if (p_gpio_hal->callbacks[pin].callback != NULL && p_gpio_hal->in_use == true)
+                {
+                    /* Invoke the callback */
+                    p_gpio_hal->callbacks[pin].callback(p_gpio_hal->callbacks[pin].p_callback_handle,
+                                                        p_gpio_hal->callbacks[pin].callback_context);
+                    break; /* Each EXTI line maps to one port; stop searching */
+                }
+            }
+
+            /* Clear the pending bit by writing 1 */
+            p_device_exti->pr = (1U << pin);
+        }
+#endif
+    }
+
+    void GpioFIntHandler(void)
+    {
+        handle_irq(4); // GPIO pin 4
+    }
+
+    reg_gpio_t *get_gpio_registers(uint32_t port)
     {
         switch (port)
         {
-#if USE_PORTA_GPIO == 1
         case GPIOA_PORT:
-            gpio_hal_port_a.p_device_gpio = p_device_gpio_a;
-            return (p_gpio_hal_t)&gpio_hal_port_a;
-            break;
-#endif // USE_PORTA_GPIO
-#if USE_PORTB_GPIO == 1
+            return p_device_gpio_a;
         case GPIOB_PORT:
-            gpio_hal_port_b.p_device_gpio = p_device_gpio_b;
-            return (p_gpio_hal_t)&gpio_hal_port_b;
-            break;
-#endif // USE_PORTB_GPIO
-#if USE_PORTC_GPIO == 1
+            return p_device_gpio_b;
         case GPIOC_PORT:
-            gpio_hal_port_c.p_device_gpio = p_device_gpio_c;
-            return (p_gpio_hal_t)&gpio_hal_port_c;
-            break;
-#endif // USE_PORTC_GPIO
-#if USE_PORTD_GPIO == 1
+            return p_device_gpio_c;
         case GPIOD_PORT:
-            gpio_hal_port_d.p_device_gpio = p_device_gpio_d;
-            return (p_gpio_hal_t)&gpio_hal_port_d;
-            break;
-#endif // USE_PORTD_GPIO
-#if USE_PORTE_GPIO == 1
+            return p_device_gpio_d;
         case GPIOE_PORT:
-            gpio_hal_port_e.p_device_gpio = p_device_gpio_e;
-            return (p_gpio_hal_t)&gpio_hal_port_e;
-            break;
-#endif // USE_PORTE_GPIO
-#if USE_PORTF_GPIO == 1
+            return p_device_gpio_e;
         case GPIOF_PORT:
-            gpio_hal_port_f.p_device_gpio = p_device_gpio_f;
-            return (p_gpio_hal_t)&gpio_hal_port_f;
-            break;
-#endif // USE_PORTF_GPIO
+            return p_device_gpio_f;
         default:
+            // assert(false); // invalid port
             return NULL;
-            break;
+        }
+    }
+
+    p_gpio_hal_t gpio_hal_create(uint32_t port) // setup GPIO HAL instance
+    {
+        p_gpio_hal_t p_free_slot = NULL;
+
+        /* Single pass: check for existing instance and track first free slot */
+        for (uint32_t i = 0; i < NUMBER_GPIOS_PORTS; i++)
+        {
+            if (gpio_hal_ports[i].in_use == true)
+            {
+                if (gpio_hal_ports[i].port_number == port)
+                {
+                    return (p_gpio_hal_t)&gpio_hal_ports[i]; /* Return existing */
+                }
+            }
+            else if (p_free_slot == NULL)
+            {
+                p_free_slot = (p_gpio_hal_t)&gpio_hal_ports[i]; /* Track first free */
+            }
         }
 
+        /* Initialize free slot if found */
+        if (p_free_slot != NULL)
+        {
+            p_free_slot->in_use        = true;
+            p_free_slot->port_number   = port;
+            p_free_slot->p_device_gpio = get_gpio_registers(port);
+        }
+
+        return p_free_slot;
     } /*lint !e818*/
 
-    void gpio_hal_init(const void *p_handle)
+    void gpio_hal_init(p_gpio_hal_t p_handle)
     {
-        // assert(p_handle != NULL);
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        if (p_gpio_hal != NULL)
+
+        if (p_handle != NULL)
         {
-            p_device_sysctl->rcgcgpio |=
-#if USE_PORTA_GPIO == 1
-                SYSCON_RCGCGPIO_PORTA_BIT |
-#endif // USE_PORTA_GPIO
-#if USE_PORTB_GPIO == 1
-                SYSCON_RCGCGPIO_PORTB_BIT |
-#endif // USE_PORTB_GPIO
-#if USE_PORTC_GPIO == 1
-                SYSCON_RCGCGPIO_PORTC_BIT |
-#endif // USE_PORTC_GPIO
-#if USE_PORTD_GPIO == 1
-                SYSCON_RCGCGPIO_PORTD_BIT |
-#endif // USE_PORTD_GPIO
-#if USE_PORTE_GPIO == 1
-                SYSCON_RCGCGPIO_PORTE_BIT |
-#endif // USE_PORTE_GPIO
-#if USE_PORTF_GPIO == 1
-                SYSCON_RCGCGPIO_PORTF_BIT |
-#endif // USE_PORTF_GPIO
-                0u;
+            switch (p_handle->port_number)
+            {
+            case GPIOA_PORT:
+                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTA_BIT;
+                break;
+            case GPIOB_PORT:
+                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTB_BIT;
+                break;
+            case GPIOC_PORT:
+                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTC_BIT;
+                break;
+            case GPIOD_PORT:
+                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTD_BIT;
+                break;
+            case GPIOE_PORT:
+                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTE_BIT;
+                break;
+            case GPIOF_PORT:
+                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTF_BIT;
+                break;
+            default:
+                // assert(false); // invalid port
+                break;
+            }
         }
+        /*
         if (p_gpio_hal->config_handle != NULL)
         {
             p_gpio_hal_config_handle_t p_config = (p_gpio_hal_config_handle_t)p_gpio_hal->config_handle;
@@ -282,50 +262,167 @@ extern "C"
             p_gpio->dir &= ~p_config->pin_mask;                             // Clear bits to set as input
             p_gpio->dir |= (p_config->direction_mask & p_config->pin_mask); // Set bits to set as output
         }
+            */
     }
 
-    void gpio_hal_set_state(const void *p_handle, uint8_t pin, bool value)
+    /*
+
+    GPIO Direction (GPIODIR)
+    The GPIODIR register is the data direction register. Setting a bit in the GPIODIR register configures
+    the corresponding pin to be an output, while clearing a bit configures the corresponding pin to be
+    an input. All bits are cleared by a reset, meaning all GPIO pins are inputs by default.
+    Bit/Field   Name    Type     Reset        Description
+    31:8        reserved RO      0x0000.00    Software should not rely on the value of a reserved bit. To provide
+                                              compatibility with future products, the value of a reserved bit should
+    be preserved across a read-modify-write operation.
+
+    7:0         DIR      RW      0x00         GPIO Data Direction
+                                              Value       Description
+                                              0           Corresponding pin is an input.
+                                              1           Corresponding pins is an output.
+
+    */
+    bool gpio_hal_pin_direction(p_gpio_hal_t p_handle, uint8_t pin, pin_direction_t value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+        p_gpio->den |= (1U << pin); // Set bits to enable digital function
+        if (p_gpio != NULL)
+        {
+            if (value == PIN_DIRECTION_OUTPUT)
+            {
+                p_gpio->dir |= (1U << pin);
+            }
+            else
+            {
+                p_gpio->dir &= ~(1U << pin);
+            }
+        }
+        return true;
+    }
+
+    bool gpio_hal_pin_mode(p_gpio_hal_t p_handle, uint8_t pin, pin_mode_t value)
+    {
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+        switch (value)
+        {
+        case PULLUP:
+            p_gpio->pur |= (1U << pin);
+            p_gpio->pdr &= ~(1U << pin);
+            break;
+        case PULLDOWN:
+            p_gpio->pdr |= (1U << pin);
+            p_gpio->pur &= ~(1U << pin);
+            break;
+        case OPENDRAIN:
+            p_gpio->odr |= (1U << pin);
+            break;
+        case FLOAT:
+            p_gpio->odr &= ~(1U << pin);
+            p_gpio->pur &= ~(1U << pin);
+            p_gpio->pdr &= ~(1U << pin);
+            break;
+        default:
+            return false;
+        }
+
+        return true;
+    }
+
+    bool gpio_hal_pin_speed(p_gpio_hal_t p_handle, uint8_t pin, pin_speed_t value)
+    {
+        (void)p_handle;
+        (void)pin;
+        (void)value;
+        return true;
+    }
+
+    void gpio_hal_set_state(p_gpio_hal_t p_handle, uint8_t pin, bool value)
+    {
+        reg_gpio_t *p_gpio = p_handle->p_device_gpio;
         if (value)
         {
-            p_gpio->data |= pin;
+            p_gpio->data |= (1U << pin);
         }
         else
         {
-            p_gpio->data &= ~pin;
+            p_gpio->data &= ~(1U << pin);
         }
     }
 
-    bool gpio_hal_get_state(const void *p_handle, uint8_t pin)
+    bool gpio_hal_get_state(p_gpio_hal_t p_handle, uint8_t pin)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        return (p_gpio->data) != 0u;
+        reg_gpio_t *p_gpio = p_handle->p_device_gpio;
+        return (p_gpio->data & (1U << pin)) != 0u;
 
     } /*lint !e818*/
 
-    void gpio_hal_toggle_state(const void *p_handle, uint8_t pin)
+    void gpio_hal_toggle_state(p_gpio_hal_t p_handle, uint8_t pin)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        p_gpio->data ^= (pin);
+        reg_gpio_t *p_gpio = p_handle->p_device_gpio;
+        p_gpio->data ^= (1U << pin);
 
     } /*lint !e818*/
 
-    void gpio_hal_write_port(const void *p_handle, uint8_t value)
+    void gpio_hal_write_port(p_gpio_hal_t p_handle, uint8_t value)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
-        p_gpio->data            = (uint32_t)value;
+        reg_gpio_t *p_gpio = p_handle->p_device_gpio;
+        p_gpio->data       = (uint32_t)value;
     }
 
-    uint8_t gpio_hal_read_port(const void *p_handle)
+    uint8_t gpio_hal_read_port(p_gpio_hal_t p_handle)
     {
-        p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)p_handle;
-        reg_gpio_t  *p_gpio     = (reg_gpio_t *)p_gpio_hal->p_device_gpio;
+        reg_gpio_t *p_gpio = p_handle->p_device_gpio;
         return (p_gpio->data & 0xFFu);
+    }
+
+    bool gpio_hal_register_callback(p_gpio_hal_t p_handle, const void *p_callback_handle, uint8_t pin,
+                                    gpio_hal_interrupt_callback_t callback, void *p_callback_context, irq_edge_t edge)
+    {
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+        if (p_handle == NULL || callback == NULL)
+        {
+            return false;
+        }
+        p_handle->callbacks[pin].callback          = callback;
+        p_handle->callbacks[pin].p_callback_handle = (void *)p_callback_handle;
+        p_handle->callbacks[pin].callback_context  = p_callback_context;
+
+        GPIO_PORTF_LOCK_R = 0x4C4F434B; // Unlock GPIO Port F
+        GPIO_PORTF_CR_R |= (1 << 4);
+
+        if (edge == IRQ_NONE)
+        {
+            // Disable interrupt
+            p_gpio->im &= ~(1U << pin);
+            return true;
+        }
+
+        p_gpio->is &= ~(1U << pin);  // Edge sensitive
+        p_gpio->ibe &= ~(1U << pin); // Single edge
+
+        if (edge == IRQ_POSITIVE)
+        {
+            p_gpio->iev |= (1U << pin); // Rising edge
+        }
+        else if (edge == IRQ_NEGATIVE)
+        {
+            p_gpio->iev &= ~(1U << pin); // Falling edge
+        }
+        else if (edge == IRQ_BOTH)
+        {
+            p_gpio->ibe |= (1U << pin); // Both edges
+        }
+
+        // p_handle->irq_edge          = edge;
+        p_gpio->mis |= (1U << pin); // Enable interrupt
+        p_gpio->icr |= (1U << pin); // Enable interrupt
+        p_gpio->im |= (1U << pin);  // Enable interrupt
+        // NVIC_ClearPendingIRQ(PIO0_IRQn);
+        // NVIC_EnableIRQ(PIO0_IRQn);
+        NVIC_EN0_R |= (1 << 30); // Enable IRQ30 (GPIOF)
+        __enable_irq();
+
+        return true;
     }
 
 #endif // HW_CONFIG_GPIO

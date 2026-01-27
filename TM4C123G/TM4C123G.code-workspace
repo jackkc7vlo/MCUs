@@ -1,14 +1,17 @@
 {
-	"folders": [
-		{
-			"path": "."
-		},
-		{
-			"path": "../hal_include"
-		}
-	],
-	"settings": {
-		"cmake.options.statusBarVisibility": "visible",
-		"cortex-debug.variableUseNaturalFormat": true
-	}
+  "folders": [
+    {
+      "path": ".",
+    },
+    {
+      "path": "../hal_include",
+    },
+    {
+      "path": "../drivers",
+    },
+  ],
+  "settings": {
+    "cmake.options.statusBarVisibility": "visible",
+    "cortex-debug.variableUseNaturalFormat": true,
+  },
 }
