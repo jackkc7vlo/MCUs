@@ -62,6 +62,8 @@ extern unsigned int __bss_section_table_end;
 /** Default interrupt handler. Should never be entered. */
 __attribute__((section(".after_vectors"))) static void defaultIntHandler(void)
 {
+    volatile uint32_t ipsr = __get_IPSR(); // Active exception number
+
     while (1)
     {
     }

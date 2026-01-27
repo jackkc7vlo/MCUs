@@ -2,11 +2,19 @@
   "C_Cpp.intelliSenseEngine": "default",
   "idf.espIdfPath": "/home/jack/esp/v6.0/esp-idf",
   "idf.pythonInstallPath": "/usr/bin/python3",
-  "idf.openOcdConfigs": [
-    "interface/jlink.cfg",
-    "target/esp32.cfg",
-    "board/esp32-wrover-kit-3.3v.cfg"
-  ],
+  "idf.openOcdLaunchArgs": [
+        "-d${config:idf.openOcdDebugLevel}",
+        "-f", "interface/jlink.cfg",
+        "-f", "target/esp32.cfg",
+        "-c",
+        "init",
+        "-c",
+        "reset halt",
+    ],
+  //"idf.openOcdConfigs": [
+  //  "interface/jlink.cfg",
+  //  "target/esp32.cfg",
+  //],
   "idf.adapterTargetName": "esp32",
   "idf.port": "/dev/ttyUSB0",
   "idf.toolsPath": "/home/jack/.espressif",
@@ -19,5 +27,10 @@
     "--query-driver=/home/jack/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc",
     "--compile-commands-dir=${workspaceFolder}/build"
   ],
-  "idf.flashType": "UART"
+  "idf.flashType": "UART",
+  "idf.openOcdConfigs": [
+    "board/esp32-wrover-kit-3.3v.cfg"
+  ],
+  "idf.svdFilePath": "${workspaceFolder}/device/esp32.svd"
+  
 }

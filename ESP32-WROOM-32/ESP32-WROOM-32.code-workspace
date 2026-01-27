@@ -5,7 +5,14 @@
 		},
 		{
 			"path": "../hal_include"
+		},
+		{
+			"path": "../drivers"
 		}
 	],
-	"settings": {}
+	"settings": {
+		"idf.openOcdConfigs": [
+			"-f /target/esp32.cfg"
+		]
+	}
 }

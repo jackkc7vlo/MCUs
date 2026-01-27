@@ -10,6 +10,7 @@ set(PROJECT_INCLUDE_DIRECTORIES
    ${MCU_DIRECTORY}/hal
    ${MCU_DIRECTORY}/device
    ${TOP_DIRECTORY}/hal_include
+   ${TOP_DIRECTORY}/drivers
 )
 
 #sources
@@ -17,7 +18,7 @@ file(GLOB_RECURSE SRC_FILES
    ${MCU_DIRECTORY}/main/*.c
    ${MCU_DIRECTORY}/hal/*.c
    ${MCU_DIRECTORY}/device/*.c
-
+   ${TOP_DIRECTORY}/drivers/*.c
 )
 
 idf_component_register(SRCS "main.c" ${SRC_FILES}

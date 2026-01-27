@@ -41,7 +41,7 @@ set(PROJECT_INCLUDE_DIRECTORIES
 #   ${TOP_DIRECTORY}/Common/os_hal_include
 #   ${TOP_DIRECTORY}/Common/UnitTests
 #   ${TOP_DIRECTORY}/TagCode/Include
-#   ${TOP_DIRECTORY}/Drivers
+   ${TOP_DIRECTORY}/drivers
 )
 
 #sources
@@ -54,7 +54,7 @@ file(GLOB_RECURSE SRC_FILES
 #   ${TOP_DIRECTORY}/Common/RTT/*.c
 #   ${TOP_DIRECTORY}/Common/RTT/*.S
 #   ${TOP_DIRECTORY}/Common/UnitTests/*.c
-#   ${TOP_DIRECTORY}/Drivers/*.c
+   ${TOP_DIRECTORY}/drivers/*.c
 )
 
 

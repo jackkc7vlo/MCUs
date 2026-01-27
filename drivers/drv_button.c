@@ -121,10 +121,14 @@ bool drv_button_init(const void *p_handle)
     p_button->p_gpio_hal = gpio_handle;
     gpio_hal_init(gpio_handle);
     gpio_hal_pin_direction(gpio_handle, p_button->pin, PIN_DIRECTION_INPUT);
+#ifndef BUTTON_MODE
+#pragma message "BUTTON_MODE not defined in hw_config.h"
+#endif
+    gpio_hal_pin_mode(gpio_handle, p_button->pin, BUTTON_MODE);
     if (p_button->p_callback != NULL)
     {
         gpio_hal_register_callback(p_button->p_gpio_hal, p_button, p_button->pin, button_isr_callback, p_button,
-                                   IRQ_BOTH);
+                                   BUTTON_EDGE);
     }
     return true;
 }

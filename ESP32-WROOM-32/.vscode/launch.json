@@ -5,13 +5,27 @@
       "type": "gdbtarget",
       "request": "attach",
       "name": "Eclipse CDT GDB Adapter",
-      "preLaunchTask": "openocd"
+        //"preLaunchTask": "openocd"
     },
     {
       "type": "espidf",
       "name": "Launch",
       "request": "launch"
-    } 
+    },
+    {
+      "name": "Cortex Debug",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "executable": "./build/your_program.elf",
+      "servertype": "openocd",
+      "device": "ESP32", // Example device name
+      "configFiles": [
+        "interface/jlink.cfg",
+        "target/esp32.cfg"
+      ],
+      "svdFile": "${workspaceFolder}/device/esp32.svd" // Add this line
+  }
 
     ]
 

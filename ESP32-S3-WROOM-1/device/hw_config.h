@@ -54,6 +54,7 @@
 #define BUTTON_ACTIVE_HIGH 0u
 #define BUTTON_PIN 5U
 #define BUTTON_PORT 0
+#define BUTTON_MODE PULLDOWN
 
 #define LED_PIN 18U
 #define LED_PORT 0
