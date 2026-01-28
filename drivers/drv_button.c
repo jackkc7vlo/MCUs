@@ -75,6 +75,10 @@ static button_handle_t buttons[NUMBER_OF_BUTTONS] = {0}; // initialize all to ze
 static void button_isr_callback(void *p_handle, void *p_callback_context)
 {
     button_handle_t *p_button = (button_handle_t *)p_handle;
+
+    // TODO replace with timer-based debounce
+    for (uint32_t i = 0; i < BUTTON_DEBOUNCE_LOOPS; i++)
+        ;
     if (p_button != NULL && p_button->p_callback != NULL)
     {
         p_button->p_callback(drv_button_is_pressed(p_button) ? BUTTON_PRESSED : BUTTON_RELEASED);

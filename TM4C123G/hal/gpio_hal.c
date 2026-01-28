@@ -102,8 +102,6 @@ extern "C"
         reg_gpio_t  *p_gpio   = (reg_gpio_t *)p_handle->p_device_gpio;
         // uint32_t     pending  = p_gpio->is;
 
-        // Clear the interrupt
-
         // Call the registered callback
         if (p_handle->callbacks[pin].callback != NULL)
         {
@@ -111,59 +109,21 @@ extern "C"
                                               p_handle->callbacks[pin].callback_context);
         }
         // NVIC_ClearPendingIRQ(PIO0_0_IRQn + pin);
-        if (p_gpio->mis & (1 << 4))
+        if (p_gpio->mis & (1 << pin))
         {
             p_gpio->icr |= (1U << pin);
         }
-        // p_gpio->icr |= (1U << pin);
-/*        if (GPIO_PORTF_MIS_R & (1 << 4))
-        {
-            GPIO_PORTF_ICR_R = (1 << 4); // Clear interrupt
-
-            // ---- Your button handling code here ----
-        }
-            */
-#if 0        
-        /* Read pending register once and mask to pin range */
-        uint32_t mask    = ((1U << (pin_end - pin_start + 1U)) - 1U) << pin_start;
-        uint32_t pending = p_device_exti->pr & mask;
-
-        if (pending == 0U)
-        {
-            return; /* Early exit - no pending interrupts */
-        }
-
-        /* Iterate through pins, processing only those with pending interrupts */
-        for (uint32_t pin = pin_start; pin <= pin_end; pin++)
-        {
-            if ((pending & (1U << pin)) == 0U)
-            {
-                continue; /* Skip non-pending pins */
-            }
-
-            /* Find the GPIO port that has a callback registered for this pin */
-            for (uint32_t j = 0; j < NUMBER_GPIOS_PORTS; j++)
-            {
-                p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)&gpio_hal_ports[j];
-
-                if (p_gpio_hal->callbacks[pin].callback != NULL && p_gpio_hal->in_use == true)
-                {
-                    /* Invoke the callback */
-                    p_gpio_hal->callbacks[pin].callback(p_gpio_hal->callbacks[pin].p_callback_handle,
-                                                        p_gpio_hal->callbacks[pin].callback_context);
-                    break; /* Each EXTI line maps to one port; stop searching */
-                }
-            }
-
-            /* Clear the pending bit by writing 1 */
-            p_device_exti->pr = (1U << pin);
-        }
-#endif
     }
 
     void GpioFIntHandler(void)
     {
-        handle_irq(4); // GPIO pin 4
+        for (uint8_t i = 0; i < 8; i++)
+        {
+            if (((reg_gpio_t *)gpio_hal_ports[0].p_device_gpio)->mis & (1 << i))
+            {
+                handle_irq(i);
+            }
+        }
     }
 
     reg_gpio_t *get_gpio_registers(uint32_t port)
