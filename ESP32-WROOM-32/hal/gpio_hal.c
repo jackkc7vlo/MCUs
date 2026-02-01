@@ -88,10 +88,12 @@ extern "C"
     {
         // callbacks[(int)arg]->
         p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)arg;
+        gpio_intr_disable(BUTTON_PIN);
         if (p_gpio_hal != NULL && p_gpio_hal->callback != NULL)
         {
             p_gpio_hal->callback(p_gpio_hal->p_callback_handle, p_gpio_hal->callback_context);
         }
+        gpio_intr_enable(BUTTON_PIN);
     }
 
     p_gpio_hal_t gpio_hal_create(uint32_t port)
