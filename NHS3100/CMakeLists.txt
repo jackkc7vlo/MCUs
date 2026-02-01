@@ -7,9 +7,15 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_TOOLCHAIN_FILE ${CMAKE_SOURCE_DIR}/arm-none-eabi-gcc.cmake)
 
 # The place we all the projects files including common core files are
+if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+set(TOP_DIRECTORY
+   C:/projects/MCUs
+)
+else ()
 set(TOP_DIRECTORY
    /home/jack/git/MCUs
 )
+endif()
 
 option (WITH_UNITS "Use reach logging." OFF)
 

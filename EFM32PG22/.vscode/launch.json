@@ -1,20 +1,26 @@
 {
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "projectName": "EFM32PG22",
     "configurations": [
         {
-            "name": "EFM32PG22_silabs_debug",
-            "cwd": "${workspaceFolder}",
-            "type": "cortex-debug",
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/debug/EFM32PG22.elf",
+            "name": "JLink launch",
             "request": "launch",
-            "serverpath": "/home/jack/.silabs/slt/installs/archive/exx32-v6.0.31/JLinkGDBServerCLExe",
+            "type": "cortex-debug",
             "servertype": "jlink",
-            "gdbPath": "/home/jack/.silabs/slt/installs/archive/exx32-v6.0.31/arm-none-eabi-gdb",
+            "serverpath": "/opt/SEGGER/JLink/JLinkGDBServer",
+            "armToolchainPath": "/usr/bin",
             "device": "EFM32PG22CxxxF512",
-            "svdFile": "/tmp/silabs_extension/silabs_extension/svd/EFM32PG22C200F512IM40.svd",
+            "interface": "swd",
+            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
             "runToEntryPoint": "main",
-            "rtos": "FreeRTOS",
-            "showDevDebugOutput": "raw",
-            "executable": "/home/jack/git/MCUs/EFM32PG22/cmake_gcc/build/base/EFM32PG22.out",
-            "serialNumber": "440226224"
+            "preLaunchTask": "Build Project",
+            "svdFile": "./device/EFM32PG22C200F512IM40.svd"
         }
-    ]
+    ],
+    "preLaunchTask": "Echo vars"
 }

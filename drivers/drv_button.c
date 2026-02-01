@@ -41,7 +41,7 @@
 #include <hw_config.h>
 #if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
 #include "drv_button.h"
-#include <device_gpio.h>
+// #include <device_gpio.h>
 #include <gpio_hal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -74,6 +74,7 @@ static button_handle_t buttons[NUMBER_OF_BUTTONS] = {0}; // initialize all to ze
  ********************************************************************************/
 static void button_isr_callback(void *p_handle, void *p_callback_context)
 {
+    (void)p_callback_context;
     button_handle_t *p_button = (button_handle_t *)p_handle;
 
     // TODO replace with timer-based debounce

@@ -1,0 +1,9 @@
+{
+    "cmake.useCMakePresets": "always",
+    "cmake.options.statusBarVisibility": "visible",
+    "cortex-debug.variableUseNaturalFormat": true,
+    "cmake.buildBeforeRun": true,
+    "cmake.configureOnOpen": false,
+    "idf.pythonInstallPath": "/usr/bin/python3",
+    "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: LLVM, BreakBeforeBraces: Allman }"
+}

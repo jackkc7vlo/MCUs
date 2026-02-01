@@ -1,0 +1,21 @@
+{
+    "folders": [
+        {
+            "path": ".."
+        },
+        {
+            "path": "../../../Common"
+        },
+        {
+            "path": "../../../Drivers"
+        },
+        {
+            "path": "../../../TagCode"
+        }
+    ],
+    "settings": {
+        "files.associations": {
+            "core_cm33.h": "c"
+        }
+    }
+}

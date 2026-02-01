@@ -37,23 +37,36 @@
  * @moditem{V1.0.x, Mar-08-2025, Jack Wilson, Initial Release, jackkc7vlo@gmail.com }
  * @modend
  *
-*/
-#include <stdint.h>
+ */
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifndef HW_CONFIG_H_
 #define HW_CONFIG_H_
 
-#define HW_CONFIG_GPIO       1
+#define HW_CONFIG_GPIO 1
+#define GPIOS_INTERRUPTS 16
+#define NUMBER_GPIOS_PORTS 2
 
+#define USE_LED_GPIO 1U
+#define LED_PIN 4U
+#define LED_PORT GPIOA_PORT
 
+#define USE_BUTTON_GPIO 1U
+#define NUMBER_OF_BUTTONS 1U
+#define BUTTON_ACTIVE_HIGH 1U
+#define BUTTON_PIN 3U
+#define BUTTON_PORT GPIOB_PORT
+#define BUTTON_MODE FLOAT
+#define BUTTON_EDGE IRQ_NEGATIVE
+#define BUTTON_DEBOUNCE_LOOPS 10000U // approx 10ms at 1MHz
 
-#define HW_CONFIG_M4_FPU     0
+#define HW_CONFIG_M4_FPU 0
 #define HW_CONFIG_DEBUG_UART 0
-#define HW_CONFIG_TIMEBASE   0
-#define HW_CONFIG_BSP        0
-#define HW_CONFIG_ADC        0
-#define HW_CONFIG_SPI        0
-#define HW_CONFIG_I2C        0
+#define HW_CONFIG_TIMEBASE 0
+#define HW_CONFIG_BSP 0
+#define HW_CONFIG_ADC 0
+#define HW_CONFIG_SPI 0
+#define HW_CONFIG_I2C 0
 
 #endif /* HW_CONFIG_H_ */
