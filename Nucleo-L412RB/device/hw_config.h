@@ -44,8 +44,6 @@
 #define HW_CONFIG_H_
 
 #define HW_CONFIG_GPIO 1
-
-#define HW_CONFIG_GPIO 1
 // number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 16
 #define NUMBER_GPIOS_PORTS 2
@@ -59,8 +57,10 @@
 #define USE_PORTG_GPIO 0
 #define USE_PORTH_GPIO 0
 
-#define USE_LED_GPIO 1
-#define LED_PIN 13
+#define USE_LED_GPIO 1U
+#define NUMBER_OF_LEDS 1U
+#define LED_PIN 13U
+#define LED_MODE FLOAT
 #define LED_PORT GPIOB_PORT
 
 #define USE_BUTTON_GPIO 1

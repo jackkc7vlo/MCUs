@@ -19,19 +19,21 @@
 #include "device_gpio.h"
 #include "device_rcc.h"
 #include "drv_button.h"
+#include "drv_led.h"
 #include "gpio_hal.h"
 #include <stddef.h>
 #include <stdint.h>
 
-void                delay(unsigned long);
-static p_gpio_hal_t gpioa_handle = NULL;
+void delay(unsigned long);
+
+static p_led_handle_t led_handle = NULL;
 
 void button_callback(button_state_t button_state)
 {
 
     if (button_state == BUTTON_PRESSED)
     {
-        gpio_hal_toggle_state(gpioa_handle, LED_PIN);
+        drv_led_toggle(led_handle);
     }
 }
 
@@ -39,21 +41,15 @@ int main(void)
 {
 
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
-    gpioa_handle = gpio_hal_create(GPIOA_PORT);
-    if (gpioa_handle != NULL)
+    led_handle = drv_led_create(LED_PORT, LED_PIN);
+    if (led_handle != NULL)
     {
-        gpio_hal_init(gpioa_handle);
-        gpio_hal_pin_direction(gpioa_handle, LED_PIN, PIN_DIRECTION_OUTPUT);
+        drv_led_init(led_handle);
     }
 #endif // HW_CONFIG_GPIO AND USE_LED_GPIO
 
 #if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
-    //    p_gpio_hal_t gpioc_handle = gpio_hal_create(GPIOC_PORT);
-    //    if (gpioc_handle != NULL)
-    //    {
-    //        gpio_hal_init(gpioc_handle);
-    //        gpio_hal_pin_direction(gpioc_handle, BUTTON_PIN, INPUT);
-    //    }
+
     p_button_handle_t p_button_handle = drv_button_create(BUTTON_PORT, BUTTON_PIN, button_callback);
     if (p_button_handle != NULL)
     {

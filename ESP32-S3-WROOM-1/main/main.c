@@ -27,6 +27,7 @@
 #include "led_strip.h"
 #endif // HAS_LED_STRIP
 #include "drv_button.h"
+#include "drv_led.h"
 #include "sdkconfig.h"
 #include "spi_hal.h"
 #include <driver/gpio.h>
@@ -40,7 +41,7 @@
    or you can edit the following line and set a number here.
 */
 // #define BLINK_GPIO CONFIG_BLINK_GPIO
-p_gpio_hal_t gpio_led_handle = NULL;
+static p_led_handle_t led_handle = NULL;
 
 void delay(unsigned long);
 
@@ -49,17 +50,8 @@ void button_callback(button_state_t button_state)
     // button_handle_t p_button_handle = (button_handle_t)p_button;
     if (button_state == BUTTON_PRESSED)
     {
-        gpio_hal_toggle_state(gpio_led_handle, LED_PIN);
+        drv_led_toggle(led_handle);
     }
-    /*   {
-           gpio_hal_set_state(gpio_led_handle, LED_PIN, true);
-
-       }
-       else
-       {
-           gpio_hal_set_state(gpio_led_handle, LED_PIN, false);
-
-       } */
 }
 
 #if HAS_LED_STRIP == 1
@@ -480,6 +472,13 @@ void app_main(void)
 #else
 void app_main(void)
 {
+#if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
+    led_handle = drv_led_create(LED_PORT, LED_PIN);
+    if (led_handle != NULL)
+    {
+        drv_led_init(led_handle);
+    }
+#endif // HW_CONFIG_GPIO AND USE_LED_GPIO
 #if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
     //    p_gpio_hal_t gpioc_handle = gpio_hal_create(GPIOC_PORT);
     //    if (gpioc_handle != NULL)
@@ -492,12 +491,7 @@ void app_main(void)
     {
         drv_button_init(p_button_handle);
     }
-    gpio_led_handle = gpio_hal_create(GPIOA_PORT);
-    if (gpio_led_handle != NULL)
-    {
-        gpio_hal_init(gpio_led_handle);
-        gpio_hal_pin_direction(gpio_led_handle, LED_PIN, PIN_DIRECTION_OUTPUT);
-    }
+
 #endif // HW_CONFIG_GPIO AND USE_BUTTON_GPIO
 
     while (1 == 1)
@@ -506,18 +500,16 @@ void app_main(void)
         // drv_button_is_pressed(p_button_handle);
         bool pressed = drv_button_is_pressed(p_button_handle);
         ESP_LOGI("TAG", "Button is %s", pressed ? "PRESSED" : "RELEASED");
-        bool led_state = gpio_hal_get_state(gpio_led_handle, LED_PIN);
-        ESP_LOGI("TAG", "LED is %s", led_state ? "ON" : "OFF");
         /*
-        if (pressed)
-        {
-            gpio_hal_set_state(gpioa_handle, LED_PIN, true);
-        }
-        else
-        {
-            gpio_hal_set_state(gpioa_handle, LED_PIN, false);
-        }
-            */
+       if (pressed)
+       {
+           gpio_hal_set_state(gpioa_handle, LED_PIN, true);
+       }
+       else
+       {
+           gpio_hal_set_state(gpioa_handle, LED_PIN, false);
+       }
+           */
     }
 }
 #endif

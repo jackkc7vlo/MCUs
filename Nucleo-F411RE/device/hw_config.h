@@ -58,7 +58,9 @@
 #define USE_PORTH_GPIO 0
 
 #define USE_LED_GPIO 1
+#define NUMBER_OF_LEDS 1U
 #define LED_PIN 5U
+#define LED_MODE FLOAT
 #define LED_PORT GPIOA_PORT
 
 #define USE_BUTTON_GPIO 1

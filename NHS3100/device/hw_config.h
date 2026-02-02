@@ -49,6 +49,12 @@
 #define GPIOS_INTERRUPTS 11
 #define NUMBER_GPIOS_PORTS 2
 
+#define USE_LED_GPIO 1U
+#define NUMBER_OF_LEDS 1U
+#define LED_PIN 7U
+#define LED_MODE FLOAT
+#define LED_PORT 0
+
 #define USE_BUTTON_GPIO 1U
 #define NUMBER_OF_BUTTONS 1U
 #define BUTTON_ACTIVE_HIGH 1u
@@ -58,8 +64,6 @@
 #define BUTTON_EDGE IRQ_NEGATIVE
 #define BUTTON_DEBOUNCE_LOOPS 1000U
 
-#define LED_PIN 7U
-#define LED_PORT 0
 // end GPIO configuration
 
 #define HW_CONFIG_M4_FPU 0

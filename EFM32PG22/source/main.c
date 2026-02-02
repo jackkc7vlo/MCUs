@@ -2,6 +2,7 @@
 /*lint -esym(793,SEGGER*)*/
 // #include "device_irq.h"
 #include "drv_button.h"
+#include "drv_led.h"
 #include <device_clock.h>
 #include <gpio_hal.h>
 #include <hw_config.h>
@@ -11,8 +12,8 @@
 // #include "device_iocon.h"
 // #include "device_syscon.h"
 
-void                delay(unsigned long count);
-static p_gpio_hal_t gpio_handle = NULL;
+void                  delay(unsigned long count);
+static p_led_handle_t led_handle = NULL;
 
 #if USE_BUTTON_GPIO == 1
 void button_callback(button_state_t button_state)
@@ -20,7 +21,7 @@ void button_callback(button_state_t button_state)
 
     if (button_state == BUTTON_PRESSED)
     {
-        gpio_hal_toggle_state(gpio_handle, LED_PIN);
+        drv_led_toggle(led_handle);
     }
 }
 #endif // USE_BUTTON_GPIO
@@ -34,11 +35,11 @@ int main(void) /*lint !e970*/
     // Enable GPIO and IOCON clock
 
 #if HW_CONFIG_GPIO == 1
-    gpio_handle = gpio_hal_create(0);
-    gpio_hal_init(gpio_handle);
-    gpio_hal_pin_direction(gpio_handle, LED_PIN, PIN_DIRECTION_OUTPUT);
-    gpio_hal_pin_mode(gpio_handle, LED_PIN, PULLUP);
-
+    led_handle = drv_led_create(LED_PORT, LED_PIN);
+    if (led_handle != NULL)
+    {
+        drv_led_init(led_handle);
+    }
 #if USE_BUTTON_GPIO == 1
     p_button_handle_t p_button_handle = drv_button_create(BUTTON_PORT, BUTTON_PIN, button_callback);
     if (p_button_handle != NULL)

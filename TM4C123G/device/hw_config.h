@@ -55,9 +55,11 @@
 #define USE_PORTF_GPIO 1
 
 #define USE_LED_GPIO 1U
+#define NUMBER_OF_LEDS 3U
 #define RED_LED_PIN 1U
 #define BLUE_LED_PIN 2U
 #define GREEN_LED_PIN 3U
+#define LED_MODE FLOAT
 #define LED_PORT GPIOF_PORT
 
 #define USE_BUTTON_GPIO 1

@@ -1,6 +1,7 @@
 #include "device_gpio.h"
 #include "device_sysctl.h"
 #include "drv_button.h"
+#include "drv_led.h"
 #include "gpio_hal.h"
 #include "tm4c123gh6pm.h"
 #include <hw_config.h>
@@ -17,8 +18,11 @@
 #define PF7 0x80
 
 //---USER FUNCTION'S---//
-void                delay(unsigned long);
-static p_gpio_hal_t gpio_handle = NULL;
+void delay(unsigned long);
+
+static p_led_handle_t red_led_handle   = NULL;
+static p_led_handle_t green_led_handle = NULL;
+static p_led_handle_t blue_led_handle  = NULL;
 
 #if USE_BUTTON_GPIO == 1u
 void button_callback(button_state_t button_state)
@@ -26,7 +30,7 @@ void button_callback(button_state_t button_state)
 
     if (button_state == BUTTON_PRESSED)
     {
-        gpio_hal_toggle_state(gpio_handle, RED_LED_PIN);
+        drv_led_toggle(red_led_handle);
     }
 }
 #endif
@@ -34,11 +38,22 @@ void button_callback(button_state_t button_state)
 int main(void)
 {
 #if HW_CONFIG_GPIO == 1
-    gpio_handle = gpio_hal_create(GPIOF_PORT);
-    gpio_hal_init(gpio_handle);
-    gpio_hal_pin_direction(gpio_handle, RED_LED_PIN, PIN_DIRECTION_OUTPUT);
-    gpio_hal_pin_direction(gpio_handle, BLUE_LED_PIN, PIN_DIRECTION_OUTPUT);
-    gpio_hal_pin_direction(gpio_handle, GREEN_LED_PIN, PIN_DIRECTION_OUTPUT);
+
+    red_led_handle   = drv_led_create(LED_PORT, RED_LED_PIN);
+    green_led_handle = drv_led_create(LED_PORT, GREEN_LED_PIN);
+    blue_led_handle  = drv_led_create(LED_PORT, BLUE_LED_PIN);
+    if (red_led_handle != NULL)
+    {
+        drv_led_init(red_led_handle);
+    }
+    if (green_led_handle != NULL)
+    {
+        drv_led_init(green_led_handle);
+    }
+    if (blue_led_handle != NULL)
+    {
+        drv_led_init(blue_led_handle);
+    }
 
     p_button_handle_t p_button_handle = drv_button_create(BUTTON_PORT, BUTTON_PIN, button_callback);
     if (p_button_handle != NULL)
@@ -51,23 +66,10 @@ int main(void)
     {
 
 #if HW_CONFIG_GPIO == 1
-        /*
-                bool button_state = drv_button_is_pressed(p_button_handle);
-                if (button_state)
-                // if (gpio_hal_get_state(gpioc_handle, BUTTON_PIN))
-                {
-                    gpio_hal_set_state(gpio_handle, RED_LED_PIN, true);
-                }
-                else
-                {
-                    gpio_hal_set_state(gpio_handle, RED_LED_PIN, false);
-                }
-        */
-        // gpio_hal_toggle_state(gpio_handle, RED_LED_PIN);
-        // delay(1000000);
-        // gpio_hal_toggle_state(gpio_handle, BLUE_LED_PIN);
-        // delay(1000000);
-        // gpio_hal_toggle_state(gpio_handle, GREEN_LED_PIN);
+
+        drv_led_toggle(blue_led_handle);
+        delay(1000000);
+        drv_led_toggle(green_led_handle);
 #endif // HW_CONFIG_GPIO
 
         delay(1000000);
