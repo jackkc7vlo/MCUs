@@ -147,11 +147,70 @@ typedef struct
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 static reg_rcc_t *p_device_rcc = (reg_rcc_t *const)(REG_RCC_BASE);
+/********************  Bit definition for RCC_CR register  ********************/
+#define RCC_CR_MSION ((uint32_t)0x00000001)    /*!< Internal Multi Speed oscillator (MSI) clock enable */
+#define RCC_CR_MSIRDY ((uint32_t)0x00000002)   /*!< Internal Multi Speed oscillator (MSI) clock ready flag */
+#define RCC_CR_MSIPLLEN ((uint32_t)0x00000004) /*!< Internal Multi Speed oscillator (MSI) PLL enable */
+#define RCC_CR_MSIRGSEL ((uint32_t)0x00000008) /*!< Internal Multi Speed oscillator (MSI) range selection */
+
+/*!< MSIRANGE configuration : 12 frequency ranges available */
+#define RCC_CR_MSIRANGE ((uint32_t)0x000000F0)    /*!< Internal Multi Speed oscillator (MSI) clock Range */
+#define RCC_CR_MSIRANGE_0 ((uint32_t)0x00000000)  /*!< Internal Multi Speed oscillator (MSI) clock Range 100 KHz */
+#define RCC_CR_MSIRANGE_1 ((uint32_t)0x00000010)  /*!< Internal Multi Speed oscillator (MSI) clock Range 200 KHz */
+#define RCC_CR_MSIRANGE_2 ((uint32_t)0x00000020)  /*!< Internal Multi Speed oscillator (MSI) clock Range 400 KHz */
+#define RCC_CR_MSIRANGE_3 ((uint32_t)0x00000030)  /*!< Internal Multi Speed oscillator (MSI) clock Range 800 KHz */
+#define RCC_CR_MSIRANGE_4 ((uint32_t)0x00000040)  /*!< Internal Multi Speed oscillator (MSI) clock Range 1 MHz */
+#define RCC_CR_MSIRANGE_5 ((uint32_t)0x00000050)  /*!< Internal Multi Speed oscillator (MSI) clock Range 2 MHz */
+#define RCC_CR_MSIRANGE_6 ((uint32_t)0x00000060)  /*!< Internal Multi Speed oscillator (MSI) clock Range 4  MHz */
+#define RCC_CR_MSIRANGE_7 ((uint32_t)0x00000070)  /*!< Internal Multi Speed oscillator (MSI) clock Range 8 KHz */
+#define RCC_CR_MSIRANGE_8 ((uint32_t)0x00000080)  /*!< Internal Multi Speed oscillator (MSI) clock Range 16 MHz */
+#define RCC_CR_MSIRANGE_9 ((uint32_t)0x00000090)  /*!< Internal Multi Speed oscillator (MSI) clock Range 24 MHz */
+#define RCC_CR_MSIRANGE_10 ((uint32_t)0x000000A0) /*!< Internal Multi Speed oscillator (MSI) clock Range 32 MHz */
+#define RCC_CR_MSIRANGE_11 ((uint32_t)0x000000B0) /*!< Internal Multi Speed oscillator (MSI) clock Range 48  MHz */
+
+#define RCC_CR_HSION ((uint32_t)0x00000100) /*!< Internal High Speed oscillator (HSI16) clock enable */
+#define RCC_CR_HSIKERON                                                                                                \
+    ((uint32_t)0x00000200) /*!< Internal High Speed oscillator (HSI16) clock enable for some IPs Kernel */
+#define RCC_CR_HSIRDY ((uint32_t)0x00000400)  /*!< Internal High Speed oscillator (HSI16) clock ready flag */
+#define RCC_CR_HSIASFS ((uint32_t)0x00000800) /*!< HSI16 Automatic Start from Stop */
+
+#define RCC_CR_HSEON ((uint32_t)0x00010000)  /*!< External High Speed oscillator (HSE) clock enable */
+#define RCC_CR_HSERDY ((uint32_t)0x00020000) /*!< External High Speed oscillator (HSE) clock ready */
+#define RCC_CR_HSEBYP ((uint32_t)0x00040000) /*!< External High Speed oscillator (HSE) clock bypass */
+#define RCC_CR_CSSON ((uint32_t)0x00080000)  /*!< HSE Clock Security System enable */
+
+#define RCC_CR_PLLON ((uint32_t)0x01000000)      /*!< System PLL clock enable */
+#define RCC_CR_PLLRDY ((uint32_t)0x02000000)     /*!< System PLL clock ready */
+#define RCC_CR_PLLSAI1ON ((uint32_t)0x04000000)  /*!< SAI1 PLL enable */
+#define RCC_CR_PLLSAI1RDY ((uint32_t)0x08000000) /*!< SAI1 PLL ready */
+#define RCC_CR_PLLSAI2ON ((uint32_t)0x10000000)  /*!< SAI2 PLL enable */
+#define RCC_CR_PLLSAI2RDY ((uint32_t)0x20000000) /*!< SAI2 PLL ready */
+
+/*!< SW configuration */
+#define RCC_CFGR_SW ((uint32_t)0x00000003)   /*!< SW[1:0] bits (System clock Switch) */
+#define RCC_CFGR_SW_0 ((uint32_t)0x00000001) /*!<Bit 0 */
+#define RCC_CFGR_SW_1 ((uint32_t)0x00000002) /*!<Bit 1 */
+
+#define RCC_CFGR_SW_MSI ((uint32_t)0x00000000) /*!< MSI oscillator selection as system clock */
+#define RCC_CFGR_SW_HSI ((uint32_t)0x00000001) /*!< HSI16 oscillator selection as system clock */
+#define RCC_CFGR_SW_HSE ((uint32_t)0x00000002) /*!< HSE oscillator selection as system clock */
+#define RCC_CFGR_SW_PLL ((uint32_t)0x00000003) /*!< PLL selection as system clock */
+
+/*!< SWS configuration */
+#define RCC_CFGR_SWS ((uint32_t)0x0000000C)   /*!< SWS[1:0] bits (System Clock Switch Status) */
+#define RCC_CFGR_SWS_0 ((uint32_t)0x00000004) /*!<Bit 0 */
+#define RCC_CFGR_SWS_1 ((uint32_t)0x00000008) /*!<Bit 1 */
+
+#define RCC_CFGR_SWS_MSI ((uint32_t)0x00000000) /*!< MSI oscillator used as system clock */
+#define RCC_CFGR_SWS_HSI ((uint32_t)0x00000004) /*!< HSI16 oscillator used as system clock */
+#define RCC_CFGR_SWS_HSE ((uint32_t)0x00000008) /*!< HSE oscillator used as system clock */
+#define RCC_CFGR_SWS_PLL ((uint32_t)0x0000000C) /*!< PLL used as system clock */
 // create RCC_AHB1ENR register
 // #define REG_RCC_AHB1ENR (*(volatile unsigned int *)(REG_RCC_BASE + 0x30U))
 
 static uint32_t *p_device_rcc_ahb1enr = (uint32_t *const)(REG_RCC_BASE + 0x30U);
-#define RCC_AHB1ENR_GPIOAEN_BIT (1U << 0U)
+#pragma GCC diagnostic pop
+#define RCC_AHB1ENR_GPIOAEN_BIT (1u << 0U)
 #define RCC_AHB1ENR_GPIOBEN_BIT (1U << 1U)
 #define RCC_AHB1ENR_GPIOCEN_BIT (1U << 2U)
 #define RCC_AHB1ENR_GPIODEN_BIT (1U << 3U)
@@ -208,4 +267,5 @@ static uint32_t *p_device_rcc_apb1enr = (uint32_t *const)(REG_RCC_BASE + 0x40U);
 #define RCC_APB2ENR_TIM10EN_BIT (1U << 17U)
 #define RCC_APB2ENR_TIM11EN_BIT (1U << 18U)
 #define RCC_APB2ENR_SPI5EN_BIT (1U << 20U)
+
 #endif /* DEVICE_RCC_H */

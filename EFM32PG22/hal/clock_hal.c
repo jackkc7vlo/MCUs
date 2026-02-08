@@ -1,6 +1,6 @@
 /**
  * ****************************(C) COPYRIGHT 2023 Old Man Software *****************
- * @file       device_clock.c
+ * @file       clock_hal.c
  * @author     Jack Wilson
  * @brief
  *
@@ -35,7 +35,9 @@
 /********************************************************************************
  * Includes
  ********************************************************************************/
-#include <device_clock.h>
+#include <clock_hal.h>
+
+#include <device_reg.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -44,8 +46,8 @@ extern "C"
 /*lint -esym(793,__*)*/
 // #include <stdint.h>
 #include <assert.h>
-#include <device_reg.h>
-// #include <stdbool.h>
+// #include <reg_hal.h>
+//  #include <stdbool.h>
 #include <stdlib.h> /*lint -e129*/
     // #include <efm32pg22c200f512im40.h>
     /********************************************************************************
@@ -65,19 +67,31 @@ extern "C"
     /********************************************************************************
      * Typedefs & Enums
      ********************************************************************************/
-    volatile uint32_t loops_per_jiffy = 98400u;
+    volatile uint32_t        loops_per_jiffy = 98400u;
+    static volatile uint32_t ms_counter      = 0u;
+    static volatile uint32_t delay_ms        = 0u;
     /********************************************************************************
      * Functions
      ********************************************************************************/
+    void SysTick_Handler(void)
+    {
+        ms_counter++;
+        if (delay_ms > 0)
+        {
+            delay_ms--;
+        }
+        // HAL_IncTick();
+        // HAL_SYSTICK_IRQHandler();
+    }
 
     /********************************************************************************/
-    static void device_clock_init_hfxo(void)
+    static void clock_hal_init_hfxo(void)
     {
         SystemHFXOClockSet(38400000u);
     }
 
     /********************************************************************************/
-    static void device_clock_init_clocks(void)
+    static void clock_hal_init_clocks(void)
     {
         // sli_em_cmu_HFXOSetForceEnable();
 #if defined(_CMU_CLKEN0_MASK) && defined(CMU_CLKEN0_HFXO0)
@@ -105,27 +119,33 @@ extern "C"
         ((CMU_TypeDef *)((0x50008000UL)))->EM4GRPACLKCTRL =
             (((CMU_TypeDef *)((0x50008000UL)))->EM4GRPACLKCTRL & ~0x3UL) | (0x00000002UL << 0);
 
-        device_clock_enable(CLOCK_GPIO, (bool)true);
+        clock_hal_enable(CLOCK_GPIO, (bool)true);
     }
 
     /********************************************************************************/
-    void device_clock_init(void)
+    void clock_hal_init(void)
     {
 
         // Enable HFXO module clock.
-        device_clock_init_hfxo();
-        device_clock_init_clocks();
+        clock_hal_init_hfxo();
+        clock_hal_init_clocks();
+
+        if (SysTick_Config(SystemCoreClock / 1000))
+        {
+            while (1)
+                ; // Capture error
+        }
     }
 
     /********************************************************************************/
-    void device_clock_set_divisor(const uint32_t divisor)
+    void clock_hal_set_divisor(const uint32_t divisor)
     {
         (void)divisor;
         assert(false); /*lint !e506 Not implemented yet */
     }
 
     /********************************************************************************/
-    void device_clock_set_clock_frequency(const uint32_t frequency)
+    void clock_hal_set_clock_frequency(const uint32_t frequency)
     {
         (void)frequency;
         assert(false); /*lint !e506*/
@@ -133,13 +153,13 @@ extern "C"
     }
 
     /********************************************************************************/
-    uint32_t device_clock_get_divisor(void)
+    uint32_t clock_hal_get_divisor(void)
     {
         return 0u;
     }
 
     /********************************************************************************/
-    uint32_t device_clock_get_freq(void)
+    uint32_t clock_hal_get_freq(void)
     {
         const uint32_t ret = SystemCoreClockGet();
 
@@ -149,7 +169,7 @@ extern "C"
 #if defined(__GNUC__) /* GCC */
 
     /********************************************************************************/
-    void device_clock_delay_us(const uint32_t us)
+    void clock_hal_delay_us(const uint32_t us)
     {
 
         __ASM volatile(
@@ -191,16 +211,21 @@ extern "C"
     } /*lint !e715*/
 #endif /* defined(__GNUC__) */
 
-    void device_clock_delay(const uint32_t ms)
+    void clock_hal_delay(const uint32_t ms)
     {
         for (uint32_t i = 0u; i < ms; i++)
         {
-            device_clock_delay_us(1000u);
+            clock_hal_delay_us(1000u);
         }
     }
 
+    uint32_t clock_hal_get_milliseconds(void)
+    {
+        return ms_counter;
+    }
+
     /********************************************************************************/
-    void device_clock_enable(const uint32_t clock, const bool enable)
+    void clock_hal_enable(const uint32_t clock, const bool enable)
     {
         volatile uint32_t *reg = NULL;
         uint32_t           bit;

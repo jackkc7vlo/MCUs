@@ -110,56 +110,112 @@ typedef struct
 
 typedef struct
 {
-    volatile uint32_t cr;           // offset 0x00
-    volatile uint32_t icscr;        // offset 0x04
-    volatile uint32_t cfgr;         // offset 0x08
-    volatile uint32_t pllcfgr;      // offset 0x0c
-    volatile uint32_t pllsai1cfgr;  // offset 0x10
-    uint32_t          reserved0;    // offset 0x14
-    volatile uint32_t cier;         // offset 0x18
-    volatile uint32_t cifr;         // offset 0x1c
-    volatile uint32_t cicr;         // offset 0x20
-    uint32_t          reserved1;    // offset 0x24
-    volatile uint32_t ahb1rstr;     // offset 0x28
-    volatile uint32_t ahb2rstr;     // offset 0x2c
-    volatile uint32_t ahb3rstr;     // offset 0x30
-    uint32_t          reserved2;    // offset 0x34
-    volatile uint32_t apb1rstr1;    // offset 0x38
-    volatile uint32_t apb1rstr2;    // offset 0x3c
-    volatile uint32_t apb2rstr;     // offset 0x40
-    uint32_t          reserved3;    // offset 0x44
-    volatile uint32_t ahb1enr;      // offset 0x48
-    volatile uint32_t ahb2enr;      // offset 0x4c
-    volatile uint32_t ahb3enr;      // offset 0x50
-    uint32_t          reserved4;    // offset 0x54
-    volatile uint32_t apb1enr1;     // offset 0x58
-    volatile uint32_t apb1enr2;     // offset 0x5c
-    volatile uint32_t apb2enr;      // offset 0x60
-    uint32_t          reserved5;    // offset 0x64
-    volatile uint32_t ahb1smenr;    // offset 0x68
-    volatile uint32_t ahb2smenr;    // offset 0x6c
-    volatile uint32_t ahb3smenr;    // offset 0x70
-    uint32_t          reserved6;    // offset 0x74
-    volatile uint32_t apb1smenr1;   // offset 0x78
-    volatile uint32_t apb1smenr2;   // offset 0x7c
-    volatile uint32_t apb2smenr;    // offset 0x80
-    uint32_t          reserved7;    // offset 0x84
-    volatile uint32_t ccipr;        // offset 0x88
-    uint32_t          reserved8;    // offset 0x8c
-    volatile uint32_t bdcr;         // offset 0x90
-    volatile uint32_t csr;          // offset 0x94
-    volatile uint32_t crrcr;        // offset 0x98
-    volatile uint32_t ccipr2;       // offset 0x9c
+    volatile uint32_t cr;          // offset 0x00
+    volatile uint32_t icscr;       // offset 0x04
+    volatile uint32_t cfgr;        // offset 0x08
+    volatile uint32_t pllcfgr;     // offset 0x0c
+    volatile uint32_t pllsai1cfgr; // offset 0x10
+    uint32_t          reserved0;   // offset 0x14
+    volatile uint32_t cier;        // offset 0x18
+    volatile uint32_t cifr;        // offset 0x1c
+    volatile uint32_t cicr;        // offset 0x20
+    uint32_t          reserved1;   // offset 0x24
+    volatile uint32_t ahb1rstr;    // offset 0x28
+    volatile uint32_t ahb2rstr;    // offset 0x2c
+    volatile uint32_t ahb3rstr;    // offset 0x30
+    uint32_t          reserved2;   // offset 0x34
+    volatile uint32_t apb1rstr1;   // offset 0x38
+    volatile uint32_t apb1rstr2;   // offset 0x3c
+    volatile uint32_t apb2rstr;    // offset 0x40
+    uint32_t          reserved3;   // offset 0x44
+    volatile uint32_t ahb1enr;     // offset 0x48
+    volatile uint32_t ahb2enr;     // offset 0x4c
+    volatile uint32_t ahb3enr;     // offset 0x50
+    uint32_t          reserved4;   // offset 0x54
+    volatile uint32_t apb1enr1;    // offset 0x58
+    volatile uint32_t apb1enr2;    // offset 0x5c
+    volatile uint32_t apb2enr;     // offset 0x60
+    uint32_t          reserved5;   // offset 0x64
+    volatile uint32_t ahb1smenr;   // offset 0x68
+    volatile uint32_t ahb2smenr;   // offset 0x6c
+    volatile uint32_t ahb3smenr;   // offset 0x70
+    uint32_t          reserved6;   // offset 0x74
+    volatile uint32_t apb1smenr1;  // offset 0x78
+    volatile uint32_t apb1smenr2;  // offset 0x7c
+    volatile uint32_t apb2smenr;   // offset 0x80
+    uint32_t          reserved7;   // offset 0x84
+    volatile uint32_t ccipr;       // offset 0x88
+    uint32_t          reserved8;   // offset 0x8c
+    volatile uint32_t bdcr;        // offset 0x90
+    volatile uint32_t csr;         // offset 0x94
+    volatile uint32_t crrcr;       // offset 0x98
+    volatile uint32_t ccipr2;      // offset 0x9c
 
 } reg_rcc_t;
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
 static reg_rcc_t *p_device_rcc = (reg_rcc_t *const)(REG_RCC_BASE);
+/********************  Bit definition for RCC_CR register  ********************/
+#define RCC_CR_MSION ((uint32_t)0x00000001)    /*!< Internal Multi Speed oscillator (MSI) clock enable */
+#define RCC_CR_MSIRDY ((uint32_t)0x00000002)   /*!< Internal Multi Speed oscillator (MSI) clock ready flag */
+#define RCC_CR_MSIPLLEN ((uint32_t)0x00000004) /*!< Internal Multi Speed oscillator (MSI) PLL enable */
+#define RCC_CR_MSIRGSEL ((uint32_t)0x00000008) /*!< Internal Multi Speed oscillator (MSI) range selection */
+
+/*!< MSIRANGE configuration : 12 frequency ranges available */
+#define RCC_CR_MSIRANGE ((uint32_t)0x000000F0)    /*!< Internal Multi Speed oscillator (MSI) clock Range */
+#define RCC_CR_MSIRANGE_0 ((uint32_t)0x00000000)  /*!< Internal Multi Speed oscillator (MSI) clock Range 100 KHz */
+#define RCC_CR_MSIRANGE_1 ((uint32_t)0x00000010)  /*!< Internal Multi Speed oscillator (MSI) clock Range 200 KHz */
+#define RCC_CR_MSIRANGE_2 ((uint32_t)0x00000020)  /*!< Internal Multi Speed oscillator (MSI) clock Range 400 KHz */
+#define RCC_CR_MSIRANGE_3 ((uint32_t)0x00000030)  /*!< Internal Multi Speed oscillator (MSI) clock Range 800 KHz */
+#define RCC_CR_MSIRANGE_4 ((uint32_t)0x00000040)  /*!< Internal Multi Speed oscillator (MSI) clock Range 1 MHz */
+#define RCC_CR_MSIRANGE_5 ((uint32_t)0x00000050)  /*!< Internal Multi Speed oscillator (MSI) clock Range 2 MHz */
+#define RCC_CR_MSIRANGE_6 ((uint32_t)0x00000060)  /*!< Internal Multi Speed oscillator (MSI) clock Range 4  MHz */
+#define RCC_CR_MSIRANGE_7 ((uint32_t)0x00000070)  /*!< Internal Multi Speed oscillator (MSI) clock Range 8 KHz */
+#define RCC_CR_MSIRANGE_8 ((uint32_t)0x00000080)  /*!< Internal Multi Speed oscillator (MSI) clock Range 16 MHz */
+#define RCC_CR_MSIRANGE_9 ((uint32_t)0x00000090)  /*!< Internal Multi Speed oscillator (MSI) clock Range 24 MHz */
+#define RCC_CR_MSIRANGE_10 ((uint32_t)0x000000A0) /*!< Internal Multi Speed oscillator (MSI) clock Range 32 MHz */
+#define RCC_CR_MSIRANGE_11 ((uint32_t)0x000000B0) /*!< Internal Multi Speed oscillator (MSI) clock Range 48  MHz */
+
+#define RCC_CR_HSION ((uint32_t)0x00000100) /*!< Internal High Speed oscillator (HSI16) clock enable */
+#define RCC_CR_HSIKERON                                                                                                \
+    ((uint32_t)0x00000200) /*!< Internal High Speed oscillator (HSI16) clock enable for some IPs Kernel */
+#define RCC_CR_HSIRDY ((uint32_t)0x00000400)  /*!< Internal High Speed oscillator (HSI16) clock ready flag */
+#define RCC_CR_HSIASFS ((uint32_t)0x00000800) /*!< HSI16 Automatic Start from Stop */
+
+#define RCC_CR_HSEON ((uint32_t)0x00010000)  /*!< External High Speed oscillator (HSE) clock enable */
+#define RCC_CR_HSERDY ((uint32_t)0x00020000) /*!< External High Speed oscillator (HSE) clock ready */
+#define RCC_CR_HSEBYP ((uint32_t)0x00040000) /*!< External High Speed oscillator (HSE) clock bypass */
+#define RCC_CR_CSSON ((uint32_t)0x00080000)  /*!< HSE Clock Security System enable */
+
+#define RCC_CR_PLLON ((uint32_t)0x01000000)      /*!< System PLL clock enable */
+#define RCC_CR_PLLRDY ((uint32_t)0x02000000)     /*!< System PLL clock ready */
+#define RCC_CR_PLLSAI1ON ((uint32_t)0x04000000)  /*!< SAI1 PLL enable */
+#define RCC_CR_PLLSAI1RDY ((uint32_t)0x08000000) /*!< SAI1 PLL ready */
+#define RCC_CR_PLLSAI2ON ((uint32_t)0x10000000)  /*!< SAI2 PLL enable */
+#define RCC_CR_PLLSAI2RDY ((uint32_t)0x20000000) /*!< SAI2 PLL ready */
+
+/*!< SW configuration */
+#define RCC_CFGR_SW ((uint32_t)0x00000003)   /*!< SW[1:0] bits (System clock Switch) */
+#define RCC_CFGR_SW_0 ((uint32_t)0x00000001) /*!<Bit 0 */
+#define RCC_CFGR_SW_1 ((uint32_t)0x00000002) /*!<Bit 1 */
+
+#define RCC_CFGR_SW_MSI ((uint32_t)0x00000000) /*!< MSI oscillator selection as system clock */
+#define RCC_CFGR_SW_HSI ((uint32_t)0x00000001) /*!< HSI16 oscillator selection as system clock */
+#define RCC_CFGR_SW_HSE ((uint32_t)0x00000002) /*!< HSE oscillator selection as system clock */
+#define RCC_CFGR_SW_PLL ((uint32_t)0x00000003) /*!< PLL selection as system clock */
+
+/*!< SWS configuration */
+#define RCC_CFGR_SWS ((uint32_t)0x0000000C)   /*!< SWS[1:0] bits (System Clock Switch Status) */
+#define RCC_CFGR_SWS_0 ((uint32_t)0x00000004) /*!<Bit 0 */
+#define RCC_CFGR_SWS_1 ((uint32_t)0x00000008) /*!<Bit 1 */
+
+#define RCC_CFGR_SWS_MSI ((uint32_t)0x00000000) /*!< MSI oscillator used as system clock */
+#define RCC_CFGR_SWS_HSI ((uint32_t)0x00000004) /*!< HSI16 oscillator used as system clock */
+#define RCC_CFGR_SWS_HSE ((uint32_t)0x00000008) /*!< HSE oscillator used as system clock */
+#define RCC_CFGR_SWS_PLL ((uint32_t)0x0000000C) /*!< PLL used as system clock */
 // create RCC_AHB1ENR register
 // #define REG_RCC_AHB1ENR (*(volatile unsigned int *)(REG_RCC_BASE + 0x30U))
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
 
 static uint32_t *p_device_rcc_ahb1enr = (uint32_t *const)(REG_RCC_BASE + 0x48U);
 static uint32_t *p_device_rcc_ahb2enr = (uint32_t *const)(REG_RCC_BASE + 0x4CU);
@@ -184,12 +240,12 @@ static uint32_t *p_device_rcc_apb1enr1 = (uint32_t *const)(REG_RCC_BASE + 0x58U)
 
 #define RCC_APB1ENR1_TIM2EN_BIT (0U)
 #define RCC_APB1ENR1_TIM3EN_BIT (1U << 1U)
-//#define RCC_APB1ENR_TIM4EN_BIT (1U << 2U)
-//#define RCC_APB1ENR_TIM5EN_BIT (1U << 3U)
+// #define RCC_APB1ENR_TIM4EN_BIT (1U << 2U)
+// #define RCC_APB1ENR_TIM5EN_BIT (1U << 3U)
 #define RCC_APB1ENR1_TIM6EN_BIT (1U << 4U)
 #define RCC_APB1ENR1_TIM7EN_BIT (1U << 5U)
-//#define RCC_APB1ENR_TIM12EN_BIT (1U << 6U)
-//#define RCC_APB1ENR_TIM13EN_BIT (1U << 7U)
+// #define RCC_APB1ENR_TIM12EN_BIT (1U << 6U)
+// #define RCC_APB1ENR_TIM13EN_BIT (1U << 7U)
 #define RCC_APB1ENR1_LCDEN_BIT (1U << 9U)
 #define RCC_APB1ENR1_RTCAPEN_BIT (1U << 10U)
 #define RCC_APB1ENR1_WWDGEN_BIT (1U << 11U)
@@ -209,7 +265,6 @@ static uint32_t *p_device_rcc_apb1enr1 = (uint32_t *const)(REG_RCC_BASE + 0x58U)
 #define RCC_APB1ENR1_DACEN_BIT (1U << 29U)
 #define RCC_APB1ENR1_OPAMPEN_BIT (1U << 30U)
 #define RCC_APB1ENR1_LPTIM1EN_BIT (1U << 31U)
-
 
 static uint32_t *p_device_rcc_apb1enr2 = (uint32_t *const)(REG_RCC_BASE + 0x5CU);
 #define RCC_APB1ENR2_LPUART1EN_BIT (0U)

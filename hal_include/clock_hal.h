@@ -117,6 +117,12 @@ extern "C"
     /// *****************************************************************************
     void clock_hal_enable(const uint32_t clock, const bool enable);
 
+    /// *****************************************************************************
+    /// @brief Get total milliseconds since system start.
+    /// @return          uint32_t The total milliseconds since system start
+    /// *****************************************************************************
+    uint32_t clock_hal_get_milliseconds(void);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif /* __cplusplus */

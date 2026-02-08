@@ -44,7 +44,7 @@ extern "C"
 /*lint -esym(793,__*)*/
 #include <hw_config.h>
 #if HW_CONFIG_GPIO == 1
-#include <device_clock.h>
+#include <clock_hal.h>
 #include <device_reg.h>
 #include <gpio_hal.h>
 #include <stdbool.h>
@@ -179,7 +179,7 @@ extern "C"
             p_free_slot->in_use        = true;
             p_free_slot->port_number   = port;
             p_free_slot->p_device_gpio = GPIO;
-            device_clock_enable(CLOCK_GPIO, true);
+            clock_hal_enable(CLOCK_GPIO, true);
             // p_device_cmu->clken0 |= (1U << (_CMU_CLKEN0_GPIO_SHIFT)); // enable clock for GPIO
             // port
         }
@@ -463,11 +463,13 @@ extern "C"
         if (pin % 2u)
         {
             NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
+            NVIC_SetPriority(GPIO_ODD_IRQn, 3); // Add this
             NVIC_EnableIRQ(GPIO_ODD_IRQn);
         }
         else
         {
             NVIC_ClearPendingIRQ(GPIO_EVEN_IRQn);
+            NVIC_SetPriority(GPIO_EVEN_IRQn, 3); // Add this
             NVIC_EnableIRQ(GPIO_EVEN_IRQn);
         }
 #endif

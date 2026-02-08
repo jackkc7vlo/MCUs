@@ -46,7 +46,7 @@ extern "C"
 #if HW_CONFIG_GPIO == 1
 
 #include <device_gpio.h>
-#include <device_sysctl.h>
+// #include <device_sysctl.h>
 #include <gpio_hal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -187,22 +187,22 @@ extern "C"
             switch (p_handle->port_number)
             {
             case GPIOA_PORT:
-                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTA_BIT;
+                SYSCTL_RCGCGPIO_R |= SYSCTL_RCGCGPIO_R0;
                 break;
             case GPIOB_PORT:
-                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTB_BIT;
+                SYSCTL_RCGCGPIO_R |= SYSCTL_RCGCGPIO_R1;
                 break;
             case GPIOC_PORT:
-                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTC_BIT;
+                SYSCTL_RCGCGPIO_R |= SYSCTL_RCGCGPIO_R2;
                 break;
             case GPIOD_PORT:
-                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTD_BIT;
+                SYSCTL_RCGCGPIO_R |= SYSCTL_RCGCGPIO_R3;
                 break;
             case GPIOE_PORT:
-                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTE_BIT;
+                SYSCTL_RCGCGPIO_R |= SYSCTL_RCGCGPIO_R4;
                 break;
             case GPIOF_PORT:
-                p_device_sysctl->rcgcgpio |= SYSCON_RCGCGPIO_PORTF_BIT;
+                SYSCTL_RCGCGPIO_R |= SYSCTL_RCGCGPIO_R5;
                 break;
             default:
                 // assert(false); // invalid port

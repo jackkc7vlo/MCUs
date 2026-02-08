@@ -3,7 +3,7 @@
 // #include "device_irq.h"
 #include "drv_button.h"
 #include "drv_led.h"
-#include <device_clock.h>
+#include <clock_hal.h>
 #include <gpio_hal.h>
 #include <hw_config.h>
 #include <stddef.h>
@@ -33,6 +33,7 @@ void button_callback(button_state_t button_state)
 int main(void) /*lint !e970*/
 {
     // Enable GPIO and IOCON clock
+    clock_hal_init();
 
 #if HW_CONFIG_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
@@ -48,14 +49,15 @@ int main(void) /*lint !e970*/
     }
 #endif // USE_BUTTON_GPIO
 #endif // HW_CONFIG_GPIO
-    delay(10000);
+    // delay(10000);
 
     while (1)
     {
-        device_clock_delay(1000);
+        clock_hal_delay(1000);
+        drv_led_toggle(led_handle);
 #if HW_CONFIG_GPIO == 1
 #if 0
-        // gpio_hal_toggle_state(gpio_handle, LED_PIN);
+        gpio_hal_toggle_state(gpio_handle, LED_PIN);
 
         bool button_state = drv_button_is_pressed(p_button_handle);
         if (button_state)
@@ -71,13 +73,6 @@ int main(void) /*lint !e970*/
 
 #endif // HW_CONFIG_GPIO
     }
-}
-
-void delay(unsigned long count)
-{
-    unsigned long i = 0;
-    for (i = 0; i < count; i++)
-        ;
 }
 
 /*lint -e956 -e754 -e785*/

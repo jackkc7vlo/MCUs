@@ -62,7 +62,7 @@
 #define BUTTON_PORT 0
 #define BUTTON_MODE PULLUP
 #define BUTTON_EDGE IRQ_NEGATIVE
-#define BUTTON_DEBOUNCE_LOOPS 1000U
+#define BUTTON_DEBOUNCE_MS 200U
 
 // end GPIO configuration
 

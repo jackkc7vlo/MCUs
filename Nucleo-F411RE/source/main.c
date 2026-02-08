@@ -16,6 +16,7 @@
  ******************************************************************************
  */
 
+#include "clock_hal.h"
 #include "device_gpio.h"
 #include "device_rcc.h"
 #include "drv_button.h"
@@ -24,7 +25,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void                  delay(unsigned long);
 static p_led_handle_t led_handle = NULL;
 
 void button_callback(button_state_t button_state)
@@ -38,7 +38,7 @@ void button_callback(button_state_t button_state)
 
 int main(void)
 {
-
+    clock_hal_init();
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
     if (led_handle != NULL)
@@ -59,15 +59,22 @@ int main(void)
     for (;;)
     {
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1 && USE_BUTTON_GPIO == 1
+        // If GPIO or LED or BUTTON not enabled, just loop
+        /*
+        bool button_state = drv_button_is_pressed(p_button_handle);
+        if (button_state)
+        // if (gpio_hal_get_state(gpioc_handle, BUTTON_PIN))
+        {
+            gpio_hal_set_state(gpioa_handle, LED_PIN, true);
+        }
+        else
+        {
+            gpio_hal_set_state(gpioa_handle, LED_PIN, false);
+        }
+            */
 
 #endif // HW_CONFIG_GPIO AND USE_LED_GPIO AND USE_BUTTON_GPIO
-        delay(100000);
+        clock_hal_delay(1000U);
+        drv_led_toggle(led_handle);
     }
-}
-
-void delay(unsigned long count)
-{
-    unsigned long i = 0;
-    for (i = 0; i < count; i++)
-        ;
 }

@@ -42,6 +42,7 @@
 #if HW_CONFIG_GPIO == 1 && USE_BUTTON_GPIO == 1
 #include "drv_button.h"
 // #include <device_gpio.h>
+#include <clock_hal.h>
 #include <gpio_hal.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -56,19 +57,17 @@
 /* Pointer to an incomplete type (hides implementation) */
 typedef struct button_handle
 {
-    bool                in_use;     /**< Is this button instance in use */
-    p_gpio_hal_t        p_gpio_hal; /**< Pointer to the GPIO HAL instance */
-    uint_fast32_t       pin;        /**< The GPIO pin number */
-    uint_fast32_t       port;       /**< The GPIO port */
-    p_button_callback_t p_callback; /**< Pointer to the callback function */
+    bool                in_use;                 /**< Is this button instance in use */
+    p_gpio_hal_t        p_gpio_hal;             /**< Pointer to the GPIO HAL instance */
+    uint_fast32_t       pin;                    /**< The GPIO pin number */
+    uint_fast32_t       port;                   /**< The GPIO port */
+    uint32_t            last_interrupt_time_ms; /**< The last time an interrupt was handled */
+    p_button_callback_t p_callback;             /**< Pointer to the callback function */
 
 } button_handle_t;
 
 static button_handle_t buttons[NUMBER_OF_BUTTONS] = {0}; // initialize all to zero / not in use
 
-#if (NUMBER_OF_BUTTONS > 2U)
-#error "NUMBER_OF_BUTTONS greater than 2 not supported"
-#endif /* NUMBER_OF_BUTTONS */
 /********************************************************************************
  * Functions
  ********************************************************************************/
@@ -77,9 +76,13 @@ static void button_isr_callback(void *p_handle, void *p_callback_context)
     (void)p_callback_context;
     button_handle_t *p_button = (button_handle_t *)p_handle;
 
-    // TODO replace with timer-based debounce
-    for (uint32_t i = 0; i < BUTTON_DEBOUNCE_LOOPS; i++)
-        ;
+    // clock_hal_delay(BUTTON_DEBOUNCE_MS);
+    uint32_t current_time = clock_hal_get_milliseconds();
+    if ((current_time - p_button->last_interrupt_time_ms) < BUTTON_DEBOUNCE_MS)
+    {
+        return; // Ignore interrupt due to debounce
+    }
+    p_button->last_interrupt_time_ms = current_time;
     if (p_button != NULL && p_button->p_callback != NULL)
     {
         p_button->p_callback(drv_button_is_pressed(p_button) ? BUTTON_PRESSED : BUTTON_RELEASED);

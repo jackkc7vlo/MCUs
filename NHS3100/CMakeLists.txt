@@ -120,7 +120,6 @@ target_link_options(${EXECUTABLE} PRIVATE
     -lc
     -lm
     -lnosys
-    -nostdlib
 )
 
 # Optional: Print executable size as part of the post build process

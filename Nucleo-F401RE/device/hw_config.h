@@ -43,10 +43,11 @@
 #ifndef HW_CONFIG_H_
 #define HW_CONFIG_H_
 
+#define HW_CONFIG_GPIO 1
+// number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 16
 #define NUMBER_GPIOS_PORTS 2
 
-#define HW_CONFIG_GPIO 1
 #define USE_PORTA_GPIO 0
 #define USE_PORTB_GPIO 0
 #define USE_PORTC_GPIO 0
@@ -69,7 +70,8 @@
 #define BUTTON_PORT GPIOC_PORT
 #define BUTTON_MODE PUSHPULL
 #define BUTTON_EDGE IRQ_NEGATIVE
-#define BUTTON_DEBOUNCE_LOOPS 1000U
+#define BUTTON_DEBOUNCE_MS 10U
+#define BUTTON_IRQ_PRIORITY 3U
 
 #define HW_CONFIG_M4_FPU 0
 #define HW_CONFIG_DEBUG_UART 0

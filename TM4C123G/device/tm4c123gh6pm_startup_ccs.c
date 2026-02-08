@@ -57,7 +57,7 @@ static void ResetISR(void);
 static void NmiSR(void);
 static void FaultISR(void);
 static void IntDefaultHandler(void);
-
+extern void SysTick_Handler(void);
 /* Implemented in init.c: */
 extern void _init(void);
 /* Implemented in main.c: */
@@ -117,7 +117,7 @@ __attribute__((section(".isr_vector"))) static const NvicIsrType vectors[] = {
     &IntDefaultHandler, /* Debug monitor handler          */
     NULL,               /* Reserved                       */
     &IntDefaultHandler, /* The PendSV handler             */
-    &IntDefaultHandler, /* The SysTick handler            */
+    &SysTick_Handler,   /* The SysTick handler            */
     &IntDefaultHandler, /* GPIO Port A                    */
     &IntDefaultHandler, /* GPIO Port B                    */
     &IntDefaultHandler, /* GPIO Port C                    */

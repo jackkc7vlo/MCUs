@@ -3,6 +3,7 @@
 #include "device_irq.h"
 #include "drv_button.h"
 #include "drv_led.h"
+#include <clock_hal.h>
 #include <gpio_hal.h>
 #include <hw_config.h>
 #include <stddef.h>
@@ -11,7 +12,6 @@
 // #include "device_iocon.h"
 // #include "device_syscon.h"
 
-void                  delay(unsigned long count);
 static p_led_handle_t led_handle = NULL;
 
 void button_callback(button_state_t button_state)
@@ -30,6 +30,7 @@ void button_callback(button_state_t button_state)
  */
 int main(void) /*lint !e970*/
 {
+    clock_hal_init();
     // Enable GPIO and IOCON clock
 
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
@@ -47,13 +48,15 @@ int main(void) /*lint !e970*/
     }
 
 #endif // HW_CONFIG_GPIO
-    delay(10000);
+    // delay(10000);
+    // clock_hal_delay(1000000); // delay 1 second to allow debugger to connect
 
     while (1)
     {
-        delay(10000);
+        clock_hal_delay(1000); // delay 1 second to allow debugger to connect
 #if HW_CONFIG_GPIO == 1
-        // gpio_hal_toggle_state(gpio_handle, LED_PIN);
+        drv_led_toggle(led_handle);
+        //  gpio_hal_toggle_state(gpio_handle, LED_PIN);
         /*
         bool button_state = drv_button_is_pressed(p_button_handle);
         if (button_state)
@@ -68,13 +71,6 @@ int main(void) /*lint !e970*/
             */
 #endif // HW_CONFIG_GPIO
     }
-}
-
-void delay(unsigned long count)
-{
-    unsigned long i = 0;
-    for (i = 0; i < count; i++)
-        ;
 }
 
 /*lint -e956 -e754 -e785*/

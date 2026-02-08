@@ -20,12 +20,15 @@
             "runToEntryPoint": "main",
             "svdFile": "./device/TM4C123GH6PM.svd",
             "configFiles": [
-                "ti_ek-tm4c123gxl.cfg"
+                "board/ti_ek-tm4c123gxl.cfg"
             ],
             "searchDir": [
                 "/usr/share/openocd/scripts" 
             ],
-            "showDevDebugOutput": "raw"
+            "openOCDLaunchCommands": [
+                "adapter speed 5000"
+            ],
+            "showDevDebugOutput": "none",
         },
         {
             "cwd": "${workspaceFolder}",

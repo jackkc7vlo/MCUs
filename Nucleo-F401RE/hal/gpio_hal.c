@@ -44,10 +44,10 @@ extern "C"
 /*lint -esym(793,__*)*/
 #include <hw_config.h>
 #if HW_CONFIG_GPIO == 1
-
 #include <device_gpio.h>
 #include <device_irq.h>
 #include <device_rcc.h>
+#include <device_scb.h>
 #include <device_syscfg.h>
 #include <gpio_hal.h>
 #include <stdbool.h>
@@ -439,30 +439,37 @@ extern "C"
         if (pin == 0U)
         {
             NVIC_EnableIRQ(EXTI0_IRQN);
+            NVIC_SetPriority(EXTI0_IRQN, BUTTON_IRQ_PRIORITY);
         }
         else if (pin == 1U)
         {
             NVIC_EnableIRQ(EXTI1_IRQN);
+            NVIC_SetPriority(EXTI1_IRQN, BUTTON_IRQ_PRIORITY);
         }
         else if (pin == 2U)
         {
             NVIC_EnableIRQ(EXTI2_IRQN);
+            NVIC_SetPriority(EXTI2_IRQN, BUTTON_IRQ_PRIORITY);
         }
         else if (pin == 3U)
         {
             NVIC_EnableIRQ(EXTI3_IRQN);
+            NVIC_SetPriority(EXTI3_IRQN, BUTTON_IRQ_PRIORITY);
         }
         else if (pin == 4U)
         {
             NVIC_EnableIRQ(EXTI4_IRQN);
+            NVIC_SetPriority(EXTI4_IRQN, BUTTON_IRQ_PRIORITY);
         }
         else if (pin <= 9U)
         {
             NVIC_EnableIRQ(EXTI9_5_IRQN);
+            NVIC_SetPriority(EXTI9_5_IRQN, BUTTON_IRQ_PRIORITY);
         }
         else if (pin <= 15U)
         {
             NVIC_EnableIRQ(EXTI15_10_IRQN);
+            NVIC_SetPriority(EXTI15_10_IRQN, BUTTON_IRQ_PRIORITY);
         }
         else
         {

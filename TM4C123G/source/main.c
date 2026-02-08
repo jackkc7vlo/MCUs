@@ -1,5 +1,6 @@
 #include "device_gpio.h"
-#include "device_sysctl.h"
+// #include "device_sysctl.h"
+#include "clock_hal.h"
 #include "drv_button.h"
 #include "drv_led.h"
 #include "gpio_hal.h"
@@ -16,9 +17,6 @@
 #define PF5 0x20
 #define PF6 0x40
 #define PF7 0x80
-
-//---USER FUNCTION'S---//
-void delay(unsigned long);
 
 static p_led_handle_t red_led_handle   = NULL;
 static p_led_handle_t green_led_handle = NULL;
@@ -37,6 +35,10 @@ void button_callback(button_state_t button_state)
 
 int main(void)
 {
+    // Needed small wait so debugger can connect before the clock is initialized and starts running
+    for (volatile uint32_t i = 0; i < 100000; i++)
+        ;
+    clock_hal_init();
 #if HW_CONFIG_GPIO == 1
 
     red_led_handle   = drv_led_create(LED_PORT, RED_LED_PIN);
@@ -67,18 +69,11 @@ int main(void)
 
 #if HW_CONFIG_GPIO == 1
 
-        drv_led_toggle(blue_led_handle);
-        delay(1000000);
-        drv_led_toggle(green_led_handle);
+//        drv_led_toggle(blue_led_handle);
+//       clock_hal_delay(1000);
+// drv_led_toggle(green_led_handle);
 #endif // HW_CONFIG_GPIO
 
-        delay(1000000);
+        // clock_hal_delay(1000);
     }
-}
-
-void delay(unsigned long count)
-{
-    unsigned long i = 0;
-    for (i = 0; i < count; i++)
-        ;
 }
