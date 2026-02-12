@@ -20,5 +20,6 @@
   "idf.flashType": "JTAG",
   "idf.jtagFlashCommandExtraArgs": [
     "no_clock_boost"
-  ]
+  ],
+  "idf.currentSetup": "/home/jack/esp/v6.0/esp-idf"
 }

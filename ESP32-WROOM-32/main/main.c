@@ -6,6 +6,7 @@
    software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
    CONDITIONS OF ANY KIND, either express or implied.
 */
+#include "clock_hal.h"
 #include "drv_button.h"
 #include "drv_led.h"
 #include "esp_log.h"
@@ -26,9 +27,6 @@
 // static bool  s_led_state     = false;
 static p_led_handle_t led_handle = NULL;
 
-void delay(unsigned long count);
-// #define LED_PIN 2
-
 void button_callback(button_state_t button_state)
 {
     // button_handle_t p_button_handle = (button_handle_t)p_button;
@@ -40,7 +38,7 @@ void button_callback(button_state_t button_state)
 
 void app_main(void)
 {
-
+    clock_hal_init();
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
     if (led_handle != NULL)
@@ -59,10 +57,12 @@ void app_main(void)
 
     while (1 == 1)
     {
-        delay(1000);
+        clock_hal_delay(1000U);
+        // drv_led_toggle(led_handle);
+
         // drv_button_is_pressed(p_button_handle);
-        bool pressed = drv_button_is_pressed(p_button_handle);
-        ESP_LOGI("TAG", "Button is %s", pressed ? "PRESSED" : "RELEASED");
+        // bool pressed = drv_button_is_pressed(p_button_handle);
+        // ESP_LOGI("TAG", "Button is %s", pressed ? "PRESSED" : "RELEASED");
 
         // gpio_hal_toggle_state(gpio_led_handle, LED_PIN);
         /*if (pressed)
