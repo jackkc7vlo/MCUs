@@ -174,4 +174,6 @@
 // i2s devices
 #define HAS_ES8311_I2S 0u
 
+#define NUM_TIMERS 2u
+
 #endif /* HW_CONFIG_H_ */

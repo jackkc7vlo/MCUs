@@ -13,9 +13,14 @@
 // #include "device_iocon.h"
 // #include "device_syscon.h"
 
+#ifndef DEBUG_FAULT_TRACE
+#define DEBUG_FAULT_TRACE 1
+#endif
+
 static p_led_handle_t led_handle   = NULL;
 static p_timer_hal_t  timer_handle = NULL;
 
+#if DEBUG_FAULT_TRACE
 volatile uint32_t smu_secure_if     = 0U;
 volatile uint32_t smu_secure_ppufs  = 0U;
 volatile uint32_t smu_secure_bmpufs = 0U;
@@ -97,6 +102,7 @@ void SMU_SECURE_IRQHandler(void)
     SMU_NS->IF_CLR = iflags;
     NVIC_ClearPendingIRQ(SMU_SECURE_IRQn);
 }
+#endif
 
 #if USE_BUTTON_GPIO == 1
 void button_callback(button_state_t button_state)
@@ -115,12 +121,14 @@ void button_callback(button_state_t button_state)
  */
 int main(void) /*lint !e970*/
 {
+#if DEBUG_FAULT_TRACE
     thread_control_before = __get_CONTROL();
     if ((thread_control_before & 1UL) != 0UL)
     {
         request_privileged_mode();
     }
     thread_control_after = __get_CONTROL();
+#endif
 
     // Enable GPIO and IOCON clock
     clock_hal_init();

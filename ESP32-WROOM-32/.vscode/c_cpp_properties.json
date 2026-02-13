@@ -6,7 +6,7 @@
       "compileCommands": "${config:idf.buildPath}/compile_commands.json",
       "cStandard": "c11",
       "cppStandard": "c++17",
-      "intelliSenseMode": "linux-gcc-x64",
+      "intelliSenseMode": "gcc-arm",
       "includePath": [
         "${config:idf.espIdfPath}/components/**",
         "${config:idf.espIdfPathWin}/components/**",
@@ -20,7 +20,7 @@
           "${config:idf.espIdfPath}/components",
           "${config:idf.espIdfPathWin}/components",
           "${workspaceFolder}",
-          "/home/jack/git/MCUs/hal_include",
+          "/home/jack/git/MCUs/hal_include/**",
           "/home/jack/git/MCUs/drivers/**"
         ],
         "limitSymbolsToIncludedHeaders": true

@@ -41,6 +41,10 @@
 #include "em_device.h"
 #include <stdbool.h>
 
+#ifndef DEBUG_FAULT_TRACE
+#define DEBUG_FAULT_TRACE 1
+#endif
+
 #ifdef BOOTLOADER_ENABLE
 #include "api/btl_interface.h"
 
@@ -399,15 +403,18 @@ void Reset_Handler(void)
 /*----------------------------------------------------------------------------
  * Default Handler for Exceptions / Interrupts
  *----------------------------------------------------------------------------*/
+#if DEBUG_FAULT_TRACE
 volatile uint32_t last_default_handler_interrupt = 0;
 volatile uint32_t last_default_handler_irqn      = 0xFFFFFFFFUL;
 volatile uint32_t last_default_nvic_ispr0        = 0;
 volatile uint32_t last_default_nvic_ispr1        = 0;
 volatile uint32_t last_default_nvic_iabr0        = 0;
 volatile uint32_t last_default_nvic_iabr1        = 0;
+#endif
 
 void Default_Handler(void)
 {
+#if DEBUG_FAULT_TRACE
     uint32_t vectactive;
 
     /* Read active exception number from SCB->ICSR */
@@ -429,6 +436,7 @@ void Default_Handler(void)
     last_default_nvic_ispr1 = NVIC->ISPR[1];
     last_default_nvic_iabr0 = NVIC->IABR[0];
     last_default_nvic_iabr1 = NVIC->IABR[1];
+#endif
 
     /* You can set a breakpoint here or check last_default_handler_interrupt value */
     /* For EFM32PG22, interrupt numbers are: */

@@ -34,15 +34,16 @@
 #include <driver/gpio.h>
 #include <esp_log.h>
 #include <spi_hal.h>
-
 #include <stdio.h>
+#include <timer_hal.h>
 // static const char *TAG = "example";
 
 /* Use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
    or you can edit the following line and set a number here.
 */
 // #define BLINK_GPIO CONFIG_BLINK_GPIO
-static p_led_handle_t led_handle = NULL;
+static p_led_handle_t led_handle   = NULL;
+static p_timer_hal_t  timer_handle = NULL;
 
 void button_callback(button_state_t button_state)
 {
@@ -472,6 +473,7 @@ void app_main(void)
 void app_main(void)
 {
     clock_hal_init();
+    timer_handle = timer_hal_create(1000U, false, NULL);
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
     if (led_handle != NULL)
@@ -493,10 +495,16 @@ void app_main(void)
     }
 
 #endif // HW_CONFIG_GPIO AND USE_BUTTON_GPIO
-
+    timer_hal_enable(timer_handle, true);
     while (1 == 1)
     {
-        clock_hal_delay(1000U);
+        while (!timer_hal_get_overflow(timer_handle))
+        {
+            vTaskDelay(1); // Delay 1ms, feeds watchdog
+        }
+        timer_hal_reset_count(timer_handle);
+        timer_hal_start(timer_handle);
+        // clock_hal_delay(1000U);
         drv_led_toggle(led_handle);
         // drv_button_is_pressed(p_button_handle);
         // bool pressed = drv_button_is_pressed(p_button_handle);
