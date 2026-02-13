@@ -81,4 +81,6 @@
 #define HW_CONFIG_SPI 0
 #define HW_CONFIG_I2C 0
 
+#define NUM_TIMERS 2U
+
 #endif /* HW_CONFIG_H_ */

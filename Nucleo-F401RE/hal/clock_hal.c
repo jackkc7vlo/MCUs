@@ -232,6 +232,59 @@ extern "C"
         return SystemCoreClock;
     }
 
+    /**
+     * @brief Get the timer input clock for APB1 timers (e.g. TIM2).
+     * @note  This computes PCLK1 from CFGR PPRE1 and returns the timer input
+     *        clock. On STM32 the timer clock is PCLK1 when APB prescaler == 1
+     *        or PCLK1 * 2 when the APB prescaler is >= 2.
+     */
+    uint32_t clock_hal_get_timer_freq(void)
+    {
+        /* Decode PPRE1 (bits 10:8 of RCC_CFGR) */
+        const uint32_t ppre1_bits = (p_device_rcc->cfgr & 0x00001C00U) >> 10U;
+        uint32_t       ppre1_div  = 1U;
+
+        /* encoding: 0..3 => HCLK not divided (div=1)
+           4 => div2, 5 => div4, 6 => div8, 7 => div16 */
+        if (ppre1_bits < 4U)
+        {
+            ppre1_div = 1U;
+        }
+        else
+        {
+            switch (ppre1_bits)
+            {
+            case 4U:
+                ppre1_div = 2U;
+                break;
+            case 5U:
+                ppre1_div = 4U;
+                break;
+            case 6U:
+                ppre1_div = 8U;
+                break;
+            case 7U:
+                ppre1_div = 16U;
+                break;
+            default:
+                ppre1_div = 1U;
+                break;
+            }
+        }
+
+        uint32_t pclk1 = SystemCoreClock / ppre1_div;
+
+        /* For APB prescalers >= 2 the timer input clock is PCLK1 * 2 */
+        if (ppre1_div == 1U)
+        {
+            return pclk1;
+        }
+        else
+        {
+            return pclk1 * 2U;
+        }
+    }
+
     /*
     uint32_t clock_hal_get_pclk1_freq(void)
     {

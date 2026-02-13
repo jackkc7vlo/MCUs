@@ -22,10 +22,12 @@
 #include "drv_button.h"
 #include "drv_led.h"
 #include "gpio_hal.h"
+#include "timer_hal.h"
 #include <stddef.h>
 #include <stdint.h>
 
-static p_led_handle_t led_handle = NULL;
+static p_led_handle_t led_handle   = NULL;
+static p_timer_hal_t  timer_handle = NULL;
 
 void button_callback(button_state_t button_state)
 {
@@ -39,6 +41,7 @@ void button_callback(button_state_t button_state)
 int main(void)
 {
     clock_hal_init();
+    timer_handle = timer_hal_create(1000U, false, NULL);
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
     if (led_handle != NULL)
@@ -74,7 +77,14 @@ int main(void)
             */
 
 #endif // HW_CONFIG_GPIO AND USE_LED_GPIO AND USE_BUTTON_GPIO
-        clock_hal_delay(1000U);
+        timer_hal_enable(timer_handle, true);
+        timer_hal_start(timer_handle);
+        while (!timer_hal_get_overflow(timer_handle))
+        {
+            // wait for timer to expire
+        }
+        timer_hal_reset_count(timer_handle);
+        // clock_hal_delay(1000U);
         drv_led_toggle(led_handle);
     }
 }

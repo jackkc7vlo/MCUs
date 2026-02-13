@@ -205,7 +205,6 @@ static reg_rcc_t *p_device_rcc = (reg_rcc_t *const)(REG_RCC_BASE);
 #define RCC_CFGR_SWS_HSI ((uint32_t)0x00000004) /*!< HSI16 oscillator used as system clock */
 #define RCC_CFGR_SWS_HSE ((uint32_t)0x00000008) /*!< HSE oscillator used as system clock */
 #define RCC_CFGR_SWS_PLL ((uint32_t)0x0000000C) /*!< PLL used as system clock */
-
 // create RCC_AHB1ENR register
 // #define REG_RCC_AHB1ENR (*(volatile unsigned int *)(REG_RCC_BASE + 0x30U))
 

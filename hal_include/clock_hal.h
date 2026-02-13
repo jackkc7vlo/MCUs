@@ -82,6 +82,12 @@ extern "C"
     uint32_t clock_hal_get_freq(void);
 
     /// *****************************************************************************
+    /// @brief Get the timer input clock frequency (TIMx) for APB1 timers.
+    /// @return          uint32_t The timer input clock frequency in Hz
+    /// *****************************************************************************
+    uint32_t clock_hal_get_timer_freq(void);
+
+    /// *****************************************************************************
     /// @brief Delay for the specified number of milliseconds.
     /// @param[in]       ms The number of milliseconds to delay
     /// @return          none

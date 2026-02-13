@@ -235,10 +235,11 @@ static uint32_t *p_device_rcc_ahb2enr = (uint32_t *const)(REG_RCC_BASE + 0x4CU);
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
-static uint32_t *p_device_rcc_apb1enr1 = (uint32_t *const)(REG_RCC_BASE + 0x58U);
 #pragma GCC diagnostic pop
 
-#define RCC_APB1ENR1_TIM2EN_BIT (0U)
+static uint32_t *p_device_rcc_apb1enr1 = (uint32_t *const)(REG_RCC_BASE + 0x58U);
+
+#define RCC_APB1ENR1_TIM2EN_BIT (1U << 0U)
 #define RCC_APB1ENR1_TIM3EN_BIT (1U << 1U)
 // #define RCC_APB1ENR_TIM4EN_BIT (1U << 2U)
 // #define RCC_APB1ENR_TIM5EN_BIT (1U << 3U)
@@ -284,5 +285,6 @@ static uint32_t *p_device_rcc_apb2enr = (uint32_t *const)(REG_RCC_BASE + 0x60U);
 #define RCC_APB2ENR_TIM16EN_BIT (1U << 17U)
 #define RCC_APB2ENR_SAI1EN_BIT (1U << 21U)
 #define RCC_APB2ENR_DFSDM1EN_BIT (1U << 24U)
+#pragma GCC diagnostic pop
 
 #endif /* DEVICE_RCC_H */

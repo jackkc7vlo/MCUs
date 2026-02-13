@@ -16,6 +16,9 @@
             "searchDir": [
                 "C:/openocd/scripts" // Path to OpenOCD scripts folder on Windows
             ],
+            "openOCDLaunchCommands": [
+                "adapter speed 5000"
+            ],
             "device": "STM32L412RB",
             "runToEntryPoint": "main",
             "svdFile": "${workspaceFolder}/device/STM32L412.svd",

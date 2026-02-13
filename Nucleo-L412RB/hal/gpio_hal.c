@@ -80,10 +80,6 @@ extern "C"
         void *p_device_gpio;    /**< Pointer to the GPIO port device registers. */
 
         callback_context_t callbacks[GPIOS_INTERRUPTS]; /**< Registered interrupt callbacks */
-
-        // gpio_hal_interrupt_callback_t callback;          /**< Registered interrupt callback */
-        // void                         *p_callback_handle; /**< Pointer to callback context (i.e. Button handle)*/
-        // void                         *callback_context;  /**< User callback context */
     };
 
     static gpio_hal_t gpio_hal_ports[NUMBER_GPIOS_PORTS] = {0};
