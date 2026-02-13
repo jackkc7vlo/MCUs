@@ -20,7 +20,25 @@
             "runToEntryPoint": "main",
             "preLaunchTask": "Build Project",
             "svdFile": "./device/EFM32PG22C200F512IM40.svd"
+        },
+        {
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/debug/EFM32PG22.elf",
+            "name": "JLink launch (Windows)",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "jlink",
+            "serverpath": "C:/Program Files/SEGGER/JLink_V876/JLinkGDBServerCL.exe",
+            "armToolchainPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/13.2 Rel1/bin",
+            "device": "EFM32PG22CxxxF512",
+            "interface": "swd",
+            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
+            "runToEntryPoint": "main",
+            "preLaunchTask": "Build Project",
+            "svdFile": "./device/EFM32PG22C200F512IM40.svd",
+            "showDevDebugOutput": "raw"
         }
     ],
+    
     "preLaunchTask": "Echo vars"
 }
