@@ -87,6 +87,8 @@ extern void Uart5IntHandler(void);
 extern void Uart6IntHandler(void);
 extern void Uart7IntHandler(void);
 
+extern void Timer0IntHandler(void);
+
 /*
  * An array with addresses of exception and interrupt handling
  * functions. Fore more information about the structure of the
@@ -137,7 +139,7 @@ __attribute__((section(".isr_vector"))) static const NvicIsrType vectors[] = {
     &IntDefaultHandler, /* ADC Sequence 2                 */
     &IntDefaultHandler, /* ADC Sequence 3                 */
     &IntDefaultHandler, /* Watchdog timer                 */
-    &IntDefaultHandler, /* Timer 0 subtimer A             */
+    &Timer0IntHandler,  /* Timer 0 subtimer A             */
     &IntDefaultHandler, /* Timer 0 subtimer B             */
     &IntDefaultHandler, /* Timer 1 subtimer A             */
     &IntDefaultHandler, /* Timer 1 subtimer B             */

@@ -187,7 +187,7 @@ extern "C"
      */
     uint32_t clock_hal_get_freq(void)
     {
-        return 50000000u;
+        return 80000000u;
     }
     /**
      * @brief Get the number of nanoseconds per tick.
@@ -216,7 +216,7 @@ extern "C"
 
     void clock_hal_delay_us(const uint32_t us)
     {
-        systick_wait(50 * us);
+        systick_wait(80 * us);
     } /*lint !e438 !e550*/
 
     uint32_t clock_hal_get_milliseconds(void)
