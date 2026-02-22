@@ -71,8 +71,14 @@
 #define HW_CONFIG_BSP 0
 #define HW_CONFIG_ADC 0
 #define HW_CONFIG_SPI 0
-#define HW_CONFIG_I2C 0
+#define HW_CONFIG_I2C 1
 
 #define NUM_TIMERS 2U
+
+#define NUM_I2C_DEVICES 1U
+#define I2C1_SCL_PORT GPIO_PORTD
+#define I2C1_SCL_PIN 3U
+#define I2C1_SDA_PORT GPIO_PORTD
+#define I2C1_SDA_PIN 2U
 
 #endif /* HW_CONFIG_H_ */

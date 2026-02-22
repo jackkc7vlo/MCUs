@@ -30,6 +30,31 @@
             ],
             "showDevDebugOutput": "none",
         },
+                {
+            "cwd": "${workspaceRoot}",
+            "executable": "./build/debug/TM4C123G.elf",
+            "name": "Debug with OpenOCD (Windows)",
+            "request": "launch",
+            "type": "cortex-debug",
+            "servertype": "openocd",
+            "serverpath": "C:/OpenOCD/bin/openocd.exe",
+            "armToolchainPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/13.2 Rel1/bin",
+            "device": "TM4C123GH6PM",
+            "interface": "swd",
+            "serialNumber": "", // add J-Link serial number if having multiple attached the same time.
+            "runToEntryPoint": "main",
+            "svdFile": "./device/TM4C123GH6PM.svd",
+            "configFiles": [
+                "board/ti_ek-tm4c123gxl.cfg"
+            ],
+            "searchDir": [
+                "/usr/share/openocd/scripts" 
+            ],
+            "openOCDLaunchCommands": [
+                "adapter speed 5000"
+            ],
+            "showDevDebugOutput": "none",
+        },
         {
             "cwd": "${workspaceFolder}",
             "executable": "./build/debug/TM4C123G.elf",

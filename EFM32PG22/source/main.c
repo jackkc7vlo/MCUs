@@ -6,6 +6,7 @@
 #include "drv_led.h"
 #include "gpio_hal.h"
 #include "timer_hal.h"
+#include "i2c_hal.h"
 #include <efm32pg22c200f512im40.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -19,6 +20,7 @@
 
 static p_led_handle_t led_handle   = NULL;
 static p_timer_hal_t  timer_handle = NULL;
+static p_i2c_hal_t   i2c_handle   = NULL;
 
 #if DEBUG_FAULT_TRACE
 volatile uint32_t smu_secure_if     = 0U;
@@ -133,6 +135,7 @@ int main(void) /*lint !e970*/
     // Enable GPIO and IOCON clock
     clock_hal_init();
     timer_handle = timer_hal_create(1000U, false, NULL);
+    i2c_handle   = i2c_hal_create_device(1u, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT, I2C1_SCL_PIN, NULL);
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
     if (led_handle != NULL)
