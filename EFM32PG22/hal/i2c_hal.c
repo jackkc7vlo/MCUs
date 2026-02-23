@@ -152,10 +152,10 @@ typedef struct
 
     /** Reference to the I2C transfer sequence definition provided by the user. */
     I2C_TransferSeq_TypeDef *seq;
-} I2C_Transfer_TypeDef;
 
-I2C_TransferReturn_TypeDef I2C_TransferInit(I2C_TypeDef *i2c, I2C_TransferSeq_TypeDef *seq);
-I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c);
+    /** Timeout counter for polled mode */
+    uint32_t timeout;
+} I2C_Transfer_TypeDef;
 
 // support for I2C callbacks
 typedef struct i2c_callback_context_s
@@ -170,15 +170,19 @@ typedef struct i2c_callback_context_s
  ********************************************************************************/
 struct i2c_hal
 {
-    bool                   in_use;           /*!< Indicates if this I2C instance is in use */
-    uint32_t               device_id;        /*!< bus id */
-    bool                   address_is_7_bit; /*!< 7 bit address */
-    p_gpio_hal_t           p_scl_gpio;
-    p_gpio_hal_t           p_sda_gpio; /*lint !e551*/
-    p_i2c_callback_t       p_callback; /*!< I2C IRQ callback */
-    I2C_TypeDef           *i2c_port;   /*!< I2C peripheral */
-    i2c_callback_context_t callback;   /**< Registered interrupt callbacks */
+    bool                           in_use;    /*!< Indicates if this I2C instance is in use */
+    uint32_t                       device_id; /*!< bus id */
+    bool                           address_is_7_bit; /*!< 7 bit address */
+    p_gpio_hal_t                   p_scl_gpio;
+    p_gpio_hal_t                   p_sda_gpio; /*lint !e551*/
+    p_i2c_callback_t               p_callback; /*!< I2C IRQ callback */
+    I2C_TypeDef                   *i2c_port;   /*!< I2C peripheral */
+    volatile I2C_Transfer_TypeDef *transfer;   /*!< I2C transfer state information */
+    i2c_callback_context_t         callback;   /**< Registered interrupt callbacks */
 };
+
+I2C_TransferReturn_TypeDef I2C_TransferInit(p_i2c_hal_t p_handle, I2C_TransferSeq_TypeDef *seq);
+I2C_TransferReturn_TypeDef I2C_Transfer(p_i2c_hal_t p_handle);
 
 typedef enum
 {
@@ -208,7 +212,8 @@ const I2CSPM_Init_TypeDef init_sensor = {.port       = I2C1,
                                          .i2cMaxFreq = 100000u,
                                          .i2cClhr    = i2cClockHLRStandard};
 
-static i2c_hal_t i2c_hal_devices[NUM_I2C_DEVICES] = {0};
+static i2c_hal_t            i2c_hal_devices[NUM_I2C_DEVICES] = {0};
+static I2C_Transfer_TypeDef i2c_transfers[NUM_I2C_DEVICES]   = {0};
 
 void i2c_hal_bus_freq_set(I2C_TypeDef *const i2c, uint32_t freqRef, const uint32_t freqScl,
                           uint32_t i2cMode)
@@ -364,7 +369,7 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
                                   const uint32_t sda_pin, const uint32_t scl_port,
                                   const uint32_t scl_pin, const p_i2c_callback_t p_callback)
 {
-    if (i2c_board_id >= NUM_I2C_DEVICES)
+    if (i2c_board_id > NUM_I2C_DEVICES)
     {
         return NULL; // Invalid device ID
     }
@@ -392,7 +397,6 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
             p_free_slot->device_id        = i2c_board_id; /*!< bus id */
             p_free_slot->address_is_7_bit = true;         /*!< 7 bit address */
 
-            // p_free_slot->i2c_port = ;       /*!< I2C peripheral */
             p_free_slot->in_use = true;
             uint32_t i2cClock;
             // I2C_Init_TypeDef i2cInit;
@@ -413,6 +417,9 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
                 return NULL;         /*lint !e527*/
             }
 
+            p_free_slot->i2c_port = init->port;        /*!< I2C peripheral */
+            p_free_slot->transfer = &i2c_transfers[i]; /*!< I2C transfer state */
+
             init->sclPort    = scl_port;
             init->sclPin     = scl_pin;
             init->sdaPort    = sda_port;
@@ -422,6 +429,34 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
             init->i2cClhr    = i2cClockHLRStandard;
 
             clock_hal_enable(i2cClock, (bool)true);
+
+            /* Configure GPIO pins for I2C */
+            /* SDA and SCL should be configured as wired-and with filter and pull-up */
+            if (scl_pin < 8u)
+            {
+                GPIO->P[scl_port].MODEL &= ~(_GPIO_P_MODEL_MODE0_MASK << (scl_pin * 4u));
+                GPIO->P[scl_port].MODEL |=
+                    (GPIO_P_MODEL_MODE0_WIREDANDPULLUPFILTER << (scl_pin * 4u));
+            }
+            else
+            {
+                GPIO->P[scl_port].MODEH &= ~(_GPIO_P_MODEH_MODE0_MASK << ((scl_pin - 8u) * 4u));
+                GPIO->P[scl_port].MODEH |=
+                    (GPIO_P_MODEH_MODE0_WIREDANDPULLUPFILTER << ((scl_pin - 8u) * 4u));
+            }
+
+            if (sda_pin < 8u)
+            {
+                GPIO->P[sda_port].MODEL &= ~(_GPIO_P_MODEL_MODE0_MASK << (sda_pin * 4u));
+                GPIO->P[sda_port].MODEL |=
+                    (GPIO_P_MODEL_MODE0_WIREDANDPULLUPFILTER << (sda_pin * 4u));
+            }
+            else
+            {
+                GPIO->P[sda_port].MODEH &= ~(_GPIO_P_MODEH_MODE0_MASK << ((sda_pin - 8u) * 4u));
+                GPIO->P[sda_port].MODEH |=
+                    (GPIO_P_MODEH_MODE0_WIREDANDPULLUPFILTER << ((sda_pin - 8u) * 4u));
+            }
 
             /* Enable pins and set location */
             if (init->port == I2C0)
@@ -510,12 +545,12 @@ uint32_t i2c_hal_write(const p_i2c_hal_t p_handle, const uint32_t slave_address,
         i2cTransferData.buf[0].len  = (uint16_t)data_len;
     }
 
-    result = I2C_TransferInit(p_i2c_device->i2c_port, &i2cTransferData);
+    result = I2C_TransferInit(p_handle, &i2cTransferData);
 
     // Send data
     while (result == i2cTransferInProgress)
     {
-        result = I2C_Transfer(p_i2c_device->i2c_port);
+        result = I2C_Transfer(p_handle);
     }
 
     if (result != i2cTransferDone)
@@ -542,9 +577,45 @@ uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address,
                       const uint32_t cmd_or_register, const uint32_t cmd_or_register_len,
                       uint8_t *const data, const uint_fast16_t data_len)
 {
-    char          error;
-    uint_fast16_t bytes_to_read = data_len;
-    uint8_t      *pdata         = data;
+    // char          error;
+    // uint_fast16_t bytes_to_read = data_len;
+    // uint8_t      *pdata         = data;
+
+    // Transfer structure
+    I2C_TransferSeq_TypeDef    i2cTransferData;
+    I2C_TransferReturn_TypeDef result;
+    uint8_t chipdata[2] = {(uint8_t)(cmd_or_register >> 8), (uint8_t)cmd_or_register};
+    // Initialize I2C transfer
+    i2cTransferData.addr  = (uint16_t)slave_address;
+    i2cTransferData.flags = I2C_FLAG_WRITE_READ; // must write target address before reading
+    if (cmd_or_register_len > 0u)
+    {
+        i2cTransferData.buf[0].data = (uint8_t *)(chipdata + (cmd_or_register_len & 1u));
+        i2cTransferData.buf[0].len  = (uint16_t)cmd_or_register_len;
+
+        i2cTransferData.buf[1].data = (uint8_t *)data;
+        i2cTransferData.buf[1].len  = (uint16_t)data_len;
+    }
+    else
+    {
+        i2cTransferData.flags       = I2C_FLAG_READ;
+        i2cTransferData.buf[0].data = (uint8_t *)data;
+        i2cTransferData.buf[0].len  = (uint16_t)data_len;
+    }
+
+    result = I2C_TransferInit(p_handle, &i2cTransferData);
+
+    // Send data
+    while (result == i2cTransferInProgress)
+    {
+        result = I2C_Transfer(p_handle);
+    }
+
+    if (result != i2cTransferDone)
+    {
+        return 0u;
+    }
+    return data_len;
 
     if (data_len <= 0)
         return -1; /* no read was performed */
@@ -598,7 +669,8 @@ void i2c_hal_irqhandler(void);
 
 static void flushRx(I2C_TypeDef *const i2c)
 {
-    while (i2c->STATUS & I2C_STATUS_RXDATAV)
+    uint32_t timeout = 10000u; // Timeout to prevent infinite loop
+    while ((i2c->STATUS & I2C_STATUS_RXDATAV) && (--timeout > 0u))
     {
         i2c->RXDATA;
     }
@@ -611,7 +683,7 @@ static void flushRx(I2C_TypeDef *const i2c)
 
 /** @endcond */
 
-I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
+I2C_TransferReturn_TypeDef I2C_Transfer(p_i2c_hal_t p_handle)
 {
     uint32_t                              tmp;
     uint32_t                              pending;
@@ -621,32 +693,23 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
 
     // assert(I2C_REF_VALID(i2c));
 
-    /* Support up to 2 I2C buses. */
-    if (i2c == I2C0)
-    {
-        transfer = i2cTransfer;
-    }
-#if (I2C_COUNT > 1)
-    else if (i2c == I2C1)
-    {
-        transfer = i2cTransfer + 1;
-    }
-#endif
-#if (I2C_COUNT > 2)
-    else if (i2c == I2C2)
-    {
-        transfer = i2cTransfer + 2;
-    }
-#endif
-    else
-    {
-        return i2cTransferUsageFault;
-    }
+    // transfer         = p_handle->transfer;
+    I2C_TypeDef *i2c = p_handle->i2c_port;
 
-    seq = transfer->seq;
+    seq = p_handle->transfer->seq;
     while (!finished)
     {
         pending = i2c->IF;
+
+        /* Check timeout to prevent infinite loop */
+        if (p_handle->transfer->timeout == 0u)
+        {
+            p_handle->transfer->result = i2cTransferNack;
+            p_handle->transfer->state  = i2cStateDone;
+            i2c->CMD                   = I2C_CMD_STOP | I2C_CMD_ABORT;
+            break;
+        }
+        p_handle->transfer->timeout--;
 
         /* If some sort of fault, abort transfer. */
         if (pending & I2C_IF_ERRORS)
@@ -656,23 +719,23 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                 /* If an arbitration fault, indicates either a slave device */
                 /* not responding as expected, or other master which is not */
                 /* supported by this software. */
-                transfer->result = i2cTransferArbLost;
+                p_handle->transfer->result = i2cTransferArbLost;
             }
             else if (pending & I2C_IF_BUSERR)
             {
                 /* A bus error indicates a misplaced start or stop, which should */
                 /* not occur in master mode controlled by this software. */
-                transfer->result = i2cTransferBusErr;
+                p_handle->transfer->result = i2cTransferBusErr;
             }
 
             /* Ifan error occurs, it is difficult to know */
             /* an exact cause and how to resolve. It will be up to a wrapper */
             /* to determine how to handle a fault/recovery if possible. */
-            transfer->state = i2cStateDone;
+            p_handle->transfer->state = i2cStateDone;
             break;
         }
 
-        switch (transfer->state)
+        switch (p_handle->transfer->state)
         {
         /***************************************************/
         /* Send the first start+address (first byte if 10 bit). */
@@ -696,10 +759,9 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                 }
             }
 
-            transfer->state = i2cStateAddrWFAckNack;
-            i2c->TXDATA     = tmp;           /* Data not transmitted until the START is sent. */
-            i2c->CMD        = I2C_CMD_START; /*lint !e835*/
-            finished        = true;
+            p_handle->transfer->state = i2cStateAddrWFAckNack;
+            i2c->TXDATA               = tmp; /* Data not transmitted until the START is sent. */
+            i2c->CMD                  = I2C_CMD_START; /*lint !e835*/
             break;
 
         /*******************************************************/
@@ -709,10 +771,11 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
             if (pending & I2C_IF_NACK)
             {
                 // I2C_IntClear(i2c, I2C_IF_NACK);
-                i2c->IF_CLR      = I2C_IF_NACK;
-                transfer->result = i2cTransferNack;
-                transfer->state  = i2cStateWFStopSent;
-                i2c->CMD         = I2C_CMD_STOP;
+                i2c->IF_CLR                = I2C_IF_NACK;
+                p_handle->transfer->result = i2cTransferNack;
+                p_handle->transfer->state  = i2cStateWFStopSent;
+                i2c->CMD                   = I2C_CMD_STOP;
+                finished                   = true;
             }
             else if (pending & I2C_IF_ACK)
             {
@@ -722,15 +785,15 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                 /* If a 10 bit address, send the 2nd byte of the address. */
                 if (seq->flags & I2C_FLAG_10BIT_ADDR)
                 {
-                    transfer->state = i2cStateAddrWF2ndAckNack;
-                    i2c->TXDATA     = (uint32_t)(seq->addr) & 0xffu;
+                    p_handle->transfer->state = i2cStateAddrWF2ndAckNack;
+                    i2c->TXDATA               = (uint32_t)(seq->addr) & 0xffu;
                 }
                 else
                 {
                     /* Determine whether receiving or sending data. */
                     if (seq->flags & I2C_FLAG_READ)
                     {
-                        transfer->state = i2cStateWFData;
+                        p_handle->transfer->state = i2cStateWFData;
                         if (seq->buf[transfer->bufIndx].len == 1u)
                         {
                             i2c->CMD = I2C_CMD_NACK;
@@ -738,12 +801,12 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                     }
                     else
                     {
-                        transfer->state = i2cStateDataSend;
+                        p_handle->transfer->state = i2cStateDataSend;
                         continue;
                     }
                 }
+                finished = true;
             }
-            finished = true;
             break;
 
         /******************************************************/
@@ -753,10 +816,11 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
             if (pending & I2C_IF_NACK)
             {
                 // I2C_IntClear(i2c, I2C_IF_NACK);
-                i2c->IF_CLR      = I2C_IF_NACK;
-                transfer->result = i2cTransferNack;
-                transfer->state  = i2cStateWFStopSent;
-                i2c->CMD         = I2C_CMD_STOP;
+                i2c->IF_CLR                = I2C_IF_NACK;
+                p_handle->transfer->result = i2cTransferNack;
+                p_handle->transfer->state  = i2cStateWFStopSent;
+                i2c->CMD                   = I2C_CMD_STOP;
+                finished                   = true;
             }
             else if (pending & I2C_IF_ACK)
             {
@@ -767,16 +831,15 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                 /* a repeated start. */
                 if (seq->flags & I2C_FLAG_READ)
                 {
-                    transfer->state = i2cStateRStartAddrSend;
+                    p_handle->transfer->state = i2cStateRStartAddrSend;
                 }
                 /* Otherwise, expected to write 0 or more bytes. */
                 else
                 {
-                    transfer->state = i2cStateDataSend;
+                    p_handle->transfer->state = i2cStateDataSend;
                 }
                 continue;
             }
-            finished = true;
             break;
 
         /*******************************/
@@ -804,13 +867,12 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                 }
             }
 
-            transfer->state = i2cStateRAddrWFAckNack;
+            p_handle->transfer->state = i2cStateRAddrWFAckNack;
             /* The START command has to be written first since repeated start. Otherwise, */
             /* data would be sent first. */
             i2c->CMD    = I2C_CMD_START; /*lint !e835*/
             i2c->TXDATA = tmp;
 
-            finished = true;
             break;
 
         /**********************************************************************/
@@ -820,10 +882,11 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
             if (pending & I2C_IF_NACK)
             {
                 // I2C_IntClear(i2c, I2C_IF_NACK);
-                i2c->IF_CLR      = I2C_IF_NACK;
-                transfer->result = i2cTransferNack;
-                transfer->state  = i2cStateWFStopSent;
-                i2c->CMD         = I2C_CMD_STOP;
+                i2c->IF_CLR                = I2C_IF_NACK;
+                p_handle->transfer->result = i2cTransferNack;
+                p_handle->transfer->state  = i2cStateWFStopSent;
+                i2c->CMD                   = I2C_CMD_STOP;
+                finished                   = true;
             }
             else if (pending & I2C_IF_ACK)
             {
@@ -833,15 +896,15 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                 /* Determine whether receiving or sending data. */
                 if (seq->flags & I2C_FLAG_WRITE_READ)
                 {
-                    transfer->state = i2cStateWFData;
+                    p_handle->transfer->state = i2cStateWFData;
                 }
                 else
                 {
-                    transfer->state = i2cStateDataSend;
+                    p_handle->transfer->state = i2cStateDataSend;
                     continue;
                 }
+                finished = true;
             }
-            finished = true;
             break;
 
         /*****************************/
@@ -849,25 +912,25 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
         /*****************************/
         case i2cStateDataSend:
             /* Reached end of data buffer. */
-            if (transfer->offset >= seq->buf[transfer->bufIndx].len)
+            if (p_handle->transfer->offset >= seq->buf[p_handle->transfer->bufIndx].len)
             {
                 /* Move to the next message part. */
-                transfer->offset = 0u;
-                transfer->bufIndx++;
+                p_handle->transfer->offset = 0u;
+                p_handle->transfer->bufIndx++;
 
                 /* Send a repeated start when switching to read mode on the 2nd buffer. */
                 if (seq->flags & I2C_FLAG_WRITE_READ)
                 {
-                    transfer->state = i2cStateRStartAddrSend;
+                    p_handle->transfer->state = i2cStateRStartAddrSend;
                     continue;
                 }
 
                 /* Only writing from one buffer or finished both buffers. */
-                if ((seq->flags & I2C_FLAG_WRITE) || (transfer->bufIndx > 1u))
+                if ((seq->flags & I2C_FLAG_WRITE) || (p_handle->transfer->bufIndx > 1u))
                 {
-                    transfer->state = i2cStateWFStopSent;
-                    i2c->CMD        = I2C_CMD_STOP;
-                    finished        = true;
+                    p_handle->transfer->state = i2cStateWFStopSent;
+                    i2c->CMD                  = I2C_CMD_STOP;
+                    finished                  = true;
                     break;
                 }
 
@@ -876,9 +939,9 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
             }
 
             /* Send byte. */
-            i2c->TXDATA     = (uint32_t)(seq->buf[transfer->bufIndx].data[transfer->offset++]);
-            transfer->state = i2cStateDataWFAckNack;
-            finished        = true;
+            i2c->TXDATA               = (uint32_t)(seq->buf[p_handle->transfer->bufIndx]
+                                         .data[p_handle->transfer->offset++]);
+            p_handle->transfer->state = i2cStateDataWFAckNack;
             break;
 
         /*********************************************************/
@@ -888,19 +951,19 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
             if (pending & I2C_IF_NACK)
             {
                 // I2C_IntClear(i2c, I2C_IF_NACK);
-                i2c->IF_CLR      = I2C_IF_NACK;
-                transfer->result = i2cTransferNack;
-                transfer->state  = i2cStateWFStopSent;
-                i2c->CMD         = I2C_CMD_STOP;
+                i2c->IF_CLR                = I2C_IF_NACK;
+                p_handle->transfer->result = i2cTransferNack;
+                p_handle->transfer->state  = i2cStateWFStopSent;
+                i2c->CMD                   = I2C_CMD_STOP;
+                finished                   = true;
             }
             else if (pending & I2C_IF_ACK)
             {
                 // I2C_IntClear(i2c, I2C_IF_ACK);
-                i2c->IF_CLR     = I2C_IF_ACK;
-                transfer->state = i2cStateDataSend;
+                i2c->IF_CLR               = I2C_IF_ACK;
+                p_handle->transfer->state = i2cStateDataSend;
                 continue;
             }
-            finished = true;
             break;
 
         /****************************/
@@ -910,7 +973,7 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
             if (pending & I2C_IF_RXDATAV)
             {
                 uint8_t        data;
-                const uint32_t rxLen = seq->buf[transfer->bufIndx].len;
+                const uint32_t rxLen = seq->buf[p_handle->transfer->bufIndx].len;
 
                 /* Must read out data not to block further progress. */
                 data = (uint8_t)(i2c->RXDATA);
@@ -939,23 +1002,23 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
 
                 /* Make sure that there is no storing beyond the end of the buffer (just in case).
                  */
-                if (transfer->offset < rxLen)
+                if (p_handle->transfer->offset < rxLen)
                 {
-                    seq->buf[transfer->bufIndx].data[transfer->offset++] = data;
+                    seq->buf[p_handle->transfer->bufIndx].data[p_handle->transfer->offset++] = data;
                 }
 
                 /* If all requested data is read, the sequence should end. */
-                if (transfer->offset >= rxLen)
+                if (p_handle->transfer->offset >= rxLen)
                 {
-                    transfer->state = i2cStateWFStopSent;
-                    i2c->CMD        = I2C_CMD_STOP;
+                    p_handle->transfer->state = i2cStateWFStopSent;
+                    i2c->CMD                  = I2C_CMD_STOP;
                 }
                 else
                 {
                     /* Send ACK and wait for the next byte. */
                     i2c->CMD = I2C_CMD_ACK;
 
-                    if ((1u < rxLen) && (transfer->offset == (rxLen - 1u)))
+                    if ((1u < rxLen) && (p_handle->transfer->offset == (rxLen - 1u)))
                     {
                         /* If receiving more than one byte and this is the next
                            to last byte, transmit the NACK now before receiving
@@ -963,8 +1026,8 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
                         i2c->CMD = I2C_CMD_NACK;
                     }
                 }
+                finished = true;
             }
-            finished = true;
             break;
 
         /***********************************/
@@ -974,32 +1037,32 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
             if (pending & I2C_IF_MSTOP)
             {
                 // I2C_IntClear(i2c, I2C_IF_MSTOP);
-                i2c->IF_CLR     = I2C_IF_MSTOP;
-                transfer->state = i2cStateDone;
+                i2c->IF_CLR               = I2C_IF_MSTOP;
+                p_handle->transfer->state = i2cStateDone;
+                finished                  = true;
             }
-            finished = true;
             break;
 
         /******************************/
         /* An unexpected state, software fault */
         /******************************/
         default:
-            transfer->result = i2cTransferSwFault;
-            transfer->state  = i2cStateDone;
-            finished         = true;
+            p_handle->transfer->result = i2cTransferSwFault;
+            p_handle->transfer->state  = i2cStateDone;
+            finished                   = true;
             break;
         } /*lint !e788*/
     }
 
-    if (transfer->state == i2cStateDone)
+    if (p_handle->transfer->state == i2cStateDone)
     {
         /* Disable interrupt sources when done. */
         i2c->IEN = 0u;
 
         /* Update the result unless a fault has already occurred. */
-        if (transfer->result == i2cTransferInProgress)
+        if (p_handle->transfer->result == i2cTransferInProgress)
         {
-            transfer->result = i2cTransferDone;
+            p_handle->transfer->result = i2cTransferDone;
         }
     }
     /* Until transfer is done, keep returning i2cTransferInProgress. */
@@ -1008,36 +1071,33 @@ I2C_TransferReturn_TypeDef I2C_Transfer(I2C_TypeDef *i2c)
         return i2cTransferInProgress;
     }
 
-    return transfer->result;
+    return p_handle->transfer->result;
 } /*lint !e952*/
 
-I2C_TransferReturn_TypeDef I2C_TransferInit(I2C_TypeDef *i2c, I2C_TransferSeq_TypeDef *seq)
+I2C_TransferReturn_TypeDef I2C_TransferInit(p_i2c_hal_t p_handle, I2C_TransferSeq_TypeDef *seq)
 {
-    static volatile I2C_Transfer_TypeDef *transfer; /*lint !e956*/
+    // static volatile I2C_Transfer_TypeDef *transfer; /*lint !e956*/
 
     assert(seq);
 
-    /* Support up to 2 I2C buses. */
-    if (i2c == I2C0)
-    {
-        transfer = i2cTransfer;
-    }
-#if (I2C_COUNT > 1)
-    else if (i2c == I2C1)
-    {
-        transfer = i2cTransfer + 1;
-    }
-#endif
-    else
-    {
-        return i2cTransferUsageFault;
-    }
+    // transfer         = p_handle->transfer;
+    I2C_TypeDef *i2c = p_handle->i2c_port;
 
     /* Check if in a busy state. Since this software assumes a single master, */
     /* issue an abort. The BUSY state is normal after a reset. */
     if (i2c->STATE & I2C_STATE_BUSY) /*lint !e835*/
     {
         i2c->CMD = I2C_CMD_ABORT;
+        /* Wait for abort to complete */
+        uint32_t abort_timeout = 1000u;
+        while ((i2c->STATE & I2C_STATE_BUSY) && (--abort_timeout > 0u))
+        {
+            /* Wait */
+        }
+        if (abort_timeout == 0u)
+        {
+            return i2cTransferBusErr; /* Bus stuck */
+        }
     }
 
     /* Do not try to read 0 bytes. It is not */
@@ -1051,11 +1111,12 @@ I2C_TransferReturn_TypeDef I2C_TransferInit(I2C_TypeDef *i2c, I2C_TransferSeq_Ty
     }
 
     /* Prepare for a transfer. */
-    transfer->state   = i2cStateStartAddrSend;
-    transfer->result  = i2cTransferInProgress;
-    transfer->offset  = 0u;
-    transfer->bufIndx = 0u;
-    transfer->seq     = seq;
+    p_handle->transfer->state   = i2cStateStartAddrSend;
+    p_handle->transfer->result  = i2cTransferInProgress;
+    p_handle->transfer->offset  = 0u;
+    p_handle->transfer->bufIndx = 0u;
+    p_handle->transfer->seq     = seq;
+    p_handle->transfer->timeout = 100000u; /* Timeout for polled mode */
 
     /* Ensure buffers are empty. */
     i2c->CMD = I2C_CMD_CLEARPC | I2C_CMD_CLEARTX;
@@ -1070,7 +1131,7 @@ I2C_TransferReturn_TypeDef I2C_TransferInit(I2C_TypeDef *i2c, I2C_TransferSeq_Ty
     i2c->IEN |= I2C_IEN_NACK | I2C_IEN_ACK | I2C_IEN_MSTOP | I2C_IEN_RXDATAV | I2C_IEN_ERRORS;
 
     /* Start a transfer. */
-    return I2C_Transfer(i2c);
+    return I2C_Transfer(p_handle);
 } /*lint !e952*/
 
 #endif /* USE_I2C */

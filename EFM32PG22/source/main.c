@@ -5,11 +5,12 @@
 #include "drv_button.h"
 #include "drv_led.h"
 #include "gpio_hal.h"
-#include "timer_hal.h"
 #include "i2c_hal.h"
+#include "timer_hal.h"
 #include <efm32pg22c200f512im40.h>
 #include <stddef.h>
 #include <stdint.h>
+
 // #include "device_gpio.h"
 // #include "device_iocon.h"
 // #include "device_syscon.h"
@@ -18,9 +19,10 @@
 #define DEBUG_FAULT_TRACE 1
 #endif
 
-static p_led_handle_t led_handle   = NULL;
-static p_timer_hal_t  timer_handle = NULL;
-static p_i2c_hal_t   i2c_handle   = NULL;
+static p_led_handle_t led_handle     = NULL;
+static p_timer_hal_t  timer_handle   = NULL;
+static p_i2c_hal_t    i2c_handle     = NULL;
+static p_gpio_hal_t   p_sensor_power = NULL;
 
 #if DEBUG_FAULT_TRACE
 volatile uint32_t smu_secure_if     = 0U;
@@ -134,8 +136,19 @@ int main(void) /*lint !e970*/
 
     // Enable GPIO and IOCON clock
     clock_hal_init();
-    timer_handle = timer_hal_create(1000U, false, NULL);
-    i2c_handle   = i2c_hal_create_device(1u, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT, I2C1_SCL_PIN, NULL);
+    timer_handle   = timer_hal_create(1000U, false, NULL);
+    p_sensor_power = gpio_hal_create(SENSOR_POWER_PORT);
+    if (p_sensor_power != NULL)
+    {
+        gpio_hal_init(p_sensor_power);
+        gpio_hal_set_state(p_sensor_power, SENSOR_POWER_PIN, (bool)true); // power on the sensor
+    }
+    i2c_handle =
+        i2c_hal_create_device(1u, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT, I2C1_SCL_PIN, NULL);
+    if (i2c_handle != NULL)
+    {
+        i2c_hal_enable(i2c_handle, true, 10U);
+    }
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
     if (led_handle != NULL)
@@ -155,9 +168,19 @@ int main(void) /*lint !e970*/
 
     /* Enable global interrupts after all peripherals are initialized */
     __enable_irq();
-
+    uint8_t  chipdata[2];
+    uint32_t cmd_data = 0u;
     for (;;)
     {
+        // Scan I2C bus for devices (0x08 to 0x77 are valid 7-bit addresses)
+        for (volatile uint32_t i = 0x08U; i <= 0x77U; i++)
+        {
+            if (i2c_hal_read(i2c_handle, i << 1, cmd_data, 1u, chipdata, 1u) > 0u)
+            {
+                volatile uint32_t dummy = i; // Set breakpoint here to inspect detected devices
+                // Process detected device at address i
+            }
+        }
         // clock_hal_delay(1000);
         // drv_led_toggle(led_handle);
 #if HW_CONFIG_GPIO == 1

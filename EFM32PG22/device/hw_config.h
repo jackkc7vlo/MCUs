@@ -47,7 +47,7 @@
 #define HW_CONFIG_GPIO 1
 // number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 16
-#define NUMBER_GPIOS_PORTS 2
+#define NUMBER_GPIOS_PORTS 4
 
 #define USE_LED_GPIO 1U
 #define NUMBER_OF_LEDS 1U
@@ -80,5 +80,7 @@
 #define I2C1_SCL_PIN 3U
 #define I2C1_SDA_PORT GPIO_PORTD
 #define I2C1_SDA_PIN 2U
+#define SENSOR_POWER_PORT GPIO_PORTC
+#define SENSOR_POWER_PIN 6U
 
 #endif /* HW_CONFIG_H_ */
