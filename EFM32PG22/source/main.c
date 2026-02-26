@@ -168,19 +168,24 @@ int main(void) /*lint !e970*/
 
     /* Enable global interrupts after all peripherals are initialized */
     __enable_irq();
-    uint8_t  chipdata[2];
-    uint32_t cmd_data = 0u;
+    uint32_t last_found_address = 1U;
+
+    while (last_found_address != 0U)
+    {
+        last_found_address = i2c_hal_scan(1u, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT,
+                                          I2C1_SCL_PIN, last_found_address);
+        if (last_found_address != 0U)
+        {
+            // Device found at last_found_address
+            volatile uint32_t dummy =
+                last_found_address; // Set breakpoint here to inspect detected device address
+            (void)dummy;
+        }
+    }
+
     for (;;)
     {
-        // Scan I2C bus for devices (0x08 to 0x77 are valid 7-bit addresses)
-        for (volatile uint32_t i = 0x08U; i <= 0x77U; i++)
-        {
-            if (i2c_hal_read(i2c_handle, i << 1, cmd_data, 1u, chipdata, 1u) > 0u)
-            {
-                volatile uint32_t dummy = i; // Set breakpoint here to inspect detected devices
-                // Process detected device at address i
-            }
-        }
+
         // clock_hal_delay(1000);
         // drv_led_toggle(led_handle);
 #if HW_CONFIG_GPIO == 1

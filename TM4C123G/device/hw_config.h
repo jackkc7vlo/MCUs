@@ -82,8 +82,11 @@
 // Timer HAL configuration
 #define NUM_TIMERS 2U
 
-// I2C HAL configuration
+// I2C HAL configuration — BoosterPack MKII uses I2C1 on Port A (PA6=SCL, PA7=SDA)
 #define NUM_I2C_DEVICES 2U
-
+#define I2C1_SCL_PORT GPIOA_PORT
+#define I2C1_SCL_PIN 6U
+#define I2C1_SDA_PORT GPIOA_PORT
+#define I2C1_SDA_PIN 7U
 
 #endif /* HW_CONFIG_H_ */

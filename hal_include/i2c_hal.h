@@ -44,8 +44,8 @@ extern "C"
 {
 #endif /* __cplusplus */
 #include <hw_config.h>
-#include <stdint.h> /*lint -e129*/
 #include <stdbool.h>
+#include <stdint.h> /*lint -e129*/
 
 #if HW_CONFIG_I2C == 1u
 
@@ -59,7 +59,7 @@ extern "C"
     // typedef struct i2c_hal_device_def_t *p_i2c_hal_device_def_t;
     typedef void (*p_i2c_callback_t)(void);
 
-        /* Opaque i2c_hal type: definition is private and resides in the .c
+    /* Opaque i2c_hal type: definition is private and resides in the .c
      * implementation file. Consumers should only use the pointer type. */
     typedef struct i2c_hal  i2c_hal_t;
     typedef struct i2c_hal *p_i2c_hal_t;
@@ -90,61 +90,67 @@ extern "C"
      * @param[in]      p_callback - Pointer to the callback function
      * @retval         Pointer to the I2C device
      ********************************************************************************/
-    p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sda_port, const uint32_t sda_pin, 
-        const uint32_t scl_port, const uint32_t scl_pin, const p_i2c_callback_t p_callback);
+    p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sda_port, const uint32_t sda_pin,
+                                      const uint32_t scl_port, const uint32_t scl_pin,
+                                      const p_i2c_callback_t p_callback);
 
     /********************************************************************************
-        * @brief          Write function for the I2C driver
-        * @param[in]      p_handle - pointer to the i2c device
-        * @param[in]      cmd_or_register - The register or command to write data to
-        *(i.e. memory address)
-        * @param[in]      cmd_or_register_len - Length of the register or command in
-        *bytes
-        * @param[in]      data -  pointer to data to send (may be words depending on
-        *MCU)
-        * @param[in]      data_len - Length of data to write in bytes
-        * @retval         Number of bytes written
-        ********************************************************************************/
-    uint32_t i2c_hal_write(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register, const uint32_t cmd_or_register_len,
-                    const uint8_t *const data, const uint_fast16_t data_len);
+     * @brief          Remove an I2C device
+     * @param[in]      p_handle - pointer to the i2c device
+     * @retval         None
+     ********************************************************************************/
+    void i2c_hal_remove_device(p_i2c_hal_t p_handle);
 
     /********************************************************************************
-        * @brief          Read function for the I2C driver
-        * @param[in]      p_handle - pointer to the i2c device
-        * @param[in]      cmd_or_register - The register or command to write data to
-        *(i.e. memory address)
-        * @param[in]      cmd_or_register_len - Length of the register or command in
-        *bytes
-        * @param[in]      data -  pointer to data (in bytes!) to read
-        * @param[in]      data_len - Length of data to read in bytes
-        * @retval         Number of bytes read
-        ********************************************************************************/
-    uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register, const uint32_t cmd_or_register_len,
-                    uint8_t *const data, const uint_fast16_t data_len);
-
+     * @brief          Write function for the I2C driver
+     * @param[in]      p_handle - pointer to the i2c device
+     * @param[in]      cmd_or_register - The register or command to write data to
+     *(i.e. memory address)
+     * @param[in]      cmd_or_register_len - Length of the register or command in
+     *bytes
+     * @param[in]      data -  pointer to data to send (may be words depending on
+     *MCU)
+     * @param[in]      data_len - Length of data to write in bytes
+     * @retval         Number of bytes written
+     ********************************************************************************/
+    uint32_t i2c_hal_write(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register,
+                           const uint32_t cmd_or_register_len, const uint8_t *const data, const uint_fast16_t data_len);
 
     /********************************************************************************
-        * @brief  Enable (power on) or disable (power off) to the i2c devices
-        * @param[in]      p_handle - pointer to the i2c device
-        * @param[in]      turn_on - enable or disable the i2c devices (POWER_ON or
-        *POWER_OFF)
-        * @param[in]      settle_time_ms - number of milliseconds to wait for the i2c
-        *                                  devices power on
-        * @retval
-        ********************************************************************************/
+     * @brief          Read function for the I2C driver
+     * @param[in]      p_handle - pointer to the i2c device
+     * @param[in]      cmd_or_register - The register or command to write data to
+     *(i.e. memory address)
+     * @param[in]      cmd_or_register_len - Length of the register or command in
+     *bytes
+     * @param[in]      data -  pointer to data (in bytes!) to read
+     * @param[in]      data_len - Length of data to read in bytes
+     * @retval         Number of bytes read
+     ********************************************************************************/
+    uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register,
+                          const uint32_t cmd_or_register_len, uint8_t *const data, const uint_fast16_t data_len);
+
+    /********************************************************************************
+     * @brief  Enable (power on) or disable (power off) to the i2c devices
+     * @param[in]      p_handle - pointer to the i2c device
+     * @param[in]      turn_on - enable or disable the i2c devices (POWER_ON or
+     *POWER_OFF)
+     * @param[in]      settle_time_ms - number of milliseconds to wait for the i2c
+     *                                  devices power on
+     * @retval
+     ********************************************************************************/
     void i2c_hal_enable(const p_i2c_hal_t p_handle, const bool turn_on, const uint32_t settle_time_ms);
 
     /**
-        * @brief Register a callback to be invoked on GPIO interrupt events.
-        * @param[in] handle Pointer to platform-specific context associated with the
-        * callback.
-        * @param callback Function to invoke when an interrupt fires. May be NULL to
-        * clear the registration.
-        *
-        * @return 0 on success, negative value when registration fails.
-        */
+     * @brief Register a callback to be invoked on GPIO interrupt events.
+     * @param[in] handle Pointer to platform-specific context associated with the
+     * callback.
+     * @param callback Function to invoke when an interrupt fires. May be NULL to
+     * clear the registration.
+     *
+     * @return 0 on success, negative value when registration fails.
+     */
     int i2c_hal_register_callback(const p_i2c_hal_t p_handle, p_i2c_callback_t callback, void *p_callback_context);
-
 
 #if USE_I2C_INTERRUPTS == 1
     /**
@@ -153,6 +159,19 @@ extern "C"
      */
     void i2c_hal_irqhandler(void);
 #endif
+
+    /********************************************************************************
+     * @brief          Scan for i2c devices on the bus
+     * @param[in]      i2c_board_id - The id of the I2C on the board (i.e 0, 1, 2..)
+     * @param[in]      sda_port - the port used for the SDA line
+     * @param[in]      sda_pin - the pin on the sda_port to use for the SDA line
+     * @param[in]      scl_port - the port used for the SCL line
+     * @param[in]      scl_pin - the pin on the scl_port to use for the SCL line
+     * @param[in]      last_found_address - the last address that was found (use 0 for initial scan)
+     * @retval         address of the first detected device on the bus, or 0 if no devices are found
+     ********************************************************************************/
+    uint32_t i2c_hal_scan(const uint32_t i2c_board_id, const uint32_t sda_port, const uint32_t sda_pin,
+                          const uint32_t scl_port, const uint32_t scl_pin, uint32_t last_found_address);
 
 #endif /* USE_I2C */
 

@@ -74,7 +74,7 @@ extern "C"
      ********************************************************************************/
     struct gpio_hal
     {
-        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t in_use_count;  /**< Indicates if this GPIO port instance is in use */
         uint32_t port_number;   /**< The GPIO port number */
         void    *config_handle; /**< Pointer to platform-specific context passed to the
                                    HAL implementation. */
@@ -160,7 +160,7 @@ extern "C"
         /* Single pass: check for existing instance and track first free slot */
         for (uint32_t i = 0; i < NUMBER_GPIOS_PORTS; i++)
         {
-            if (gpio_hal_ports[i].in_use == true)
+            if (gpio_hal_ports[i].in_use_count > 0u)
             {
                 if (gpio_hal_ports[i].port_number == port)
                 {
@@ -176,7 +176,7 @@ extern "C"
         /* Initialize free slot if found */
         if (p_free_slot != NULL)
         {
-            p_free_slot->in_use        = true;
+            p_free_slot->in_use_count++;
             p_free_slot->port_number   = port;
             p_free_slot->p_device_gpio = GPIO;
             clock_hal_enable(CLOCK_GPIO, true);
@@ -186,6 +186,57 @@ extern "C"
 
         return p_free_slot;
     } /*lint !e818*/
+
+    void gpio_hal_remove(p_gpio_hal_t p_handle)
+    {
+        if (p_handle == NULL)
+        {
+            return;
+        }
+        if (p_handle->in_use_count > 0u)
+        {
+            p_handle->in_use_count--;
+        }
+        if (p_handle->in_use_count == 0u)
+        {
+            /* Disable any registered interrupts for all pins on this port */
+            for (uint8_t pin = 0u; pin < GPIOS_INTERRUPTS; pin++)
+            {
+                if (p_handle->callbacks[pin].callback != NULL)
+                {
+                    /* Disable the interrupt for this pin */
+                    GPIO->IEN &= ~(1u << pin);
+                    GPIO->IF_CLR = (1u << pin);
+
+                    /* Clear edge detection */
+                    GPIO->EXTIRISE &= ~(1u << pin);
+                    GPIO->EXTIFALL &= ~(1u << pin);
+
+                    /* Clear the callback */
+                    p_handle->callbacks[pin].callback          = NULL;
+                    p_handle->callbacks[pin].p_callback_handle = NULL;
+                    p_handle->callbacks[pin].callback_context  = NULL;
+                }
+            }
+
+            /* Reset all pins on this port to disabled (default) mode */
+            GPIO->P[p_handle->port_number].MODEL = 0u;
+            GPIO->P[p_handle->port_number].MODEH = 0u;
+            GPIO->P[p_handle->port_number].DOUT  = 0u;
+
+            /* Clear output tracking */
+            for (uint8_t i = 0u; i < 8u; i++)
+            {
+                p_handle->bOutput[i] = false;
+            }
+
+            /* Clear device pointer */
+            p_handle->p_device_gpio = NULL;
+            p_handle->port_number   = 0u;
+
+            clock_hal_enable(CLOCK_GPIO, false);
+        }
+    }
 
     void gpio_hal_init(p_gpio_hal_t p_handle)
     {

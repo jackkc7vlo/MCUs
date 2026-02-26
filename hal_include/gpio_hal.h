@@ -154,7 +154,7 @@ extern "C"
      * @param port Port identifier (use GPIOA_PORT..GPIOH_PORT).
      * @return Pointer to a `gpio_hal_t` instance on success, or NULL on failure.
      */
-    p_gpio_hal_t gpio_hal_create(uint32_t port);
+    // p_gpio_hal_t gpio_hal_create(uint32_t port);
 
     /**
      * @brief Create a GPIO HAL instance for a specific port.
@@ -166,6 +166,17 @@ extern "C"
      * @return Pointer to a `gpio_hal_t` instance on success, or NULL on failure.
      */
     p_gpio_hal_t gpio_hal_create(uint32_t port);
+
+    /**
+     * @brief Remove the GPIO HAL instance.
+     *
+     * Performs any platform specific deinitialization required before using the
+     * GPIO HAL (e.g. disable clocks, configure register access). The @p p_handle
+     * should point to the `gpio_hal_t` instance returned from `gpio_hal_create`.
+     *
+     * @param p_handle Pointer to the HAL instance (input).
+     */
+    void gpio_hal_remove(p_gpio_hal_t p_handle);
 
     /**
      * @brief Initialize the GPIO HAL instance.
@@ -260,6 +271,20 @@ extern "C"
      * @retval false on failure or unsupported on platform
      */
     bool gpio_hal_pin_speed(p_gpio_hal_t p_handle, uint8_t pin, pin_speed_t value);
+
+    /**
+     * @brief Set the alternate function number (PCTL) for a pin.
+     *
+     * Should be called after setting the pin direction to PIN_DIRECTION_ALT.
+     * The alt_func value selects which peripheral function is routed to the pin.
+     *
+     * @param p_handle Pointer to the HAL instance (input).
+     * @param pin Pin index within the port (0..7).
+     * @param alt_func Alternate function number (0..15, platform-specific).
+     * @retval true on success
+     * @retval false on failure or invalid parameter
+     */
+    bool gpio_hal_set_alt_function(p_gpio_hal_t p_handle, uint8_t pin, uint8_t alt_func);
 
     /**
      * @brief Register an interrupt callback for a specific GPIO pin.

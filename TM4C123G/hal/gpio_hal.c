@@ -77,7 +77,7 @@ extern "C"
      ********************************************************************************/
     struct gpio_hal
     {
-        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t in_use_count;  /**< Indicates if this GPIO port instance is in use */
         uint32_t port_number;   /**< The GPIO port number */
         void    *config_handle; /**< Pointer to platform-specific context passed to the
                                    HAL implementation. */
@@ -155,7 +155,7 @@ extern "C"
         /* Single pass: check for existing instance and track first free slot */
         for (uint32_t i = 0; i < NUMBER_GPIOS_PORTS; i++)
         {
-            if (gpio_hal_ports[i].in_use == true)
+            if (gpio_hal_ports[i].in_use_count > 0)
             {
                 if (gpio_hal_ports[i].port_number == port)
                 {
@@ -171,13 +171,39 @@ extern "C"
         /* Initialize free slot if found */
         if (p_free_slot != NULL)
         {
-            p_free_slot->in_use        = true;
+            p_free_slot->in_use_count++;
             p_free_slot->port_number   = port;
             p_free_slot->p_device_gpio = get_gpio_registers(port);
         }
 
         return p_free_slot;
     } /*lint !e818*/
+
+    void gpio_hal_remove(p_gpio_hal_t p_handle)
+    {
+        if (p_handle == NULL)
+        {
+            return;
+        }
+        if (p_handle->in_use_count > 0u)
+        {
+            p_handle->in_use_count--;
+        }
+        if (p_handle->in_use_count == 0u)
+        {
+            /* Disable any registered interrupts for all pins on this port */
+
+            /* Reset all pins on this port to disabled (default) mode */
+
+            /* Clear output tracking */
+
+            /* Clear device pointer */
+            p_handle->p_device_gpio = NULL;
+            p_handle->port_number   = 0u;
+
+            // clock_hal_enable(CLOCK_GPIO, false);
+        }
+    }
 
     void gpio_hal_init(p_gpio_hal_t p_handle)
     {
@@ -245,18 +271,39 @@ extern "C"
     bool gpio_hal_pin_direction(p_gpio_hal_t p_handle, uint8_t pin, pin_direction_t value)
     {
         reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
-        p_gpio->den |= (1U << pin); // Set bits to enable digital function
-        if (p_gpio != NULL)
+        if (p_gpio == NULL)
         {
-            if (value == PIN_DIRECTION_OUTPUT)
-            {
-                p_gpio->dir |= (1U << pin);
-            }
-            else
-            {
-                p_gpio->dir &= ~(1U << pin);
-            }
+            return false;
         }
+        p_gpio->den |= (1U << pin); // Set bits to enable digital function
+        if (value == PIN_DIRECTION_ALT)
+        {
+            p_gpio->afsel |= (1U << pin); // Enable alternate function
+            p_gpio->dir &= ~(1U << pin);  // Alternate pins are not driven by DIR
+        }
+        else if (value == PIN_DIRECTION_OUTPUT)
+        {
+            p_gpio->afsel &= ~(1U << pin); // Ensure GPIO mode (not alternate)
+            p_gpio->dir |= (1U << pin);
+        }
+        else
+        {
+            p_gpio->afsel &= ~(1U << pin); // Ensure GPIO mode (not alternate)
+            p_gpio->dir &= ~(1U << pin);
+        }
+        return true;
+    }
+
+    bool gpio_hal_set_alt_function(p_gpio_hal_t p_handle, uint8_t pin, uint8_t alt_func)
+    {
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+        if (p_gpio == NULL || pin > 7u || alt_func > 0x0Fu)
+        {
+            return false;
+        }
+        uint32_t shift = (uint32_t)pin * 4U;
+        uint32_t mask  = 0x0FU << shift;
+        p_gpio->pctl   = (p_gpio->pctl & ~mask) | ((uint32_t)alt_func << shift);
         return true;
     }
 

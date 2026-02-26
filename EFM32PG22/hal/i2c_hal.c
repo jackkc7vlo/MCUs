@@ -170,12 +170,11 @@ typedef struct i2c_callback_context_s
  ********************************************************************************/
 struct i2c_hal
 {
-    bool                           in_use;    /*!< Indicates if this I2C instance is in use */
-    uint32_t                       device_id; /*!< bus id */
+    uint32_t                       in_use_count; /*!< Indicates if this I2C instance is in use */
+    uint32_t                       device_id;    /*!< bus id */
     bool                           address_is_7_bit; /*!< 7 bit address */
     p_gpio_hal_t                   p_scl_gpio;
     p_gpio_hal_t                   p_sda_gpio; /*lint !e551*/
-    p_i2c_callback_t               p_callback; /*!< I2C IRQ callback */
     I2C_TypeDef                   *i2c_port;   /*!< I2C peripheral */
     volatile I2C_Transfer_TypeDef *transfer;   /*!< I2C transfer state information */
     i2c_callback_context_t         callback;   /**< Registered interrupt callbacks */
@@ -381,7 +380,7 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
     }
     for (uint32_t i = 0; i < NUM_I2C_DEVICES; i++)
     {
-        if (i2c_hal_devices[i].in_use == true)
+        if (i2c_hal_devices[i].in_use_count > 0u)
         {
             return &i2c_hal_devices[i]; // Device already in use, return existing device
         }
@@ -397,7 +396,7 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
             p_free_slot->device_id        = i2c_board_id; /*!< bus id */
             p_free_slot->address_is_7_bit = true;         /*!< 7 bit address */
 
-            p_free_slot->in_use = true;
+            p_free_slot->in_use_count++;
             uint32_t i2cClock;
             // I2C_Init_TypeDef i2cInit;
             I2CSPM_Init_TypeDef *init = (I2CSPM_Init_TypeDef *)&init_sensor;
@@ -487,7 +486,6 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
             init->port->IF_CLR = _I2C_IF_MASK;
 
             // set i2c as a master
-            // set i2c as a master
             device_reg_bit_write(&(init->port->CTRL), _I2C_CTRL_SLAVE_SHIFT, 0u); /*lint !e9117*/
 
             i2c_hal_bus_freq_set(init->port, init->i2cRefFreq, init->i2cMaxFreq,
@@ -500,6 +498,84 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
     // Additional hardware-specific initialization can be done here
 
     return p_free_slot;
+}
+
+void i2c_hal_remove_device(p_i2c_hal_t p_handle)
+{
+    if (p_handle == NULL)
+    {
+        return;
+    }
+
+    if (--p_handle->in_use_count == 0u)
+    {
+        /* Abort any in-progress transfer and send STOP */
+        p_handle->i2c_port->CMD = I2C_CMD_ABORT | I2C_CMD_STOP;
+
+        /* Disable all I2C interrupts and clear pending flags */
+        p_handle->i2c_port->IEN    = 0u;
+        p_handle->i2c_port->IF_CLR = _I2C_IF_MASK;
+
+        /* Disable the I2C peripheral */
+        device_reg_bit_write(&(p_handle->i2c_port->EN), _I2C_EN_EN_SHIFT, false); /*lint !e9117*/
+
+        /* Disconnect GPIO pin routing */
+        if (p_handle->i2c_port == I2C0)
+        {
+            GPIO->I2CROUTE[0].ROUTEEN  = 0u;
+            GPIO->I2CROUTE[0].SCLROUTE = 0u;
+            GPIO->I2CROUTE[0].SDAROUTE = 0u;
+        }
+        else if (p_handle->i2c_port == I2C1)
+        {
+            GPIO->I2CROUTE[1].ROUTEEN  = 0u;
+            GPIO->I2CROUTE[1].SCLROUTE = 0u;
+            GPIO->I2CROUTE[1].SDAROUTE = 0u;
+        }
+
+        /* Disable the I2C peripheral clock */
+        uint32_t i2cClock;
+        if (p_handle->device_id == 0u)
+        {
+            i2cClock = (1u << 5u) | (14u << 0u); /*lint !e835*/
+        }
+        else if (p_handle->device_id == 1u)
+        {
+            i2cClock = (1u << 5u) | (15u << 0u); /*lint !e835*/
+        }
+        else
+        {
+            i2cClock = 0u; /* unknown, skip clock disable */
+        }
+
+        if (i2cClock != 0u)
+        {
+            clock_hal_enable(i2cClock, (bool)false);
+        }
+
+        /* Clear the transfer state */
+        p_handle->transfer->state  = i2cStateDone;
+        p_handle->transfer->result = i2cTransferDone;
+        p_handle->transfer->offset = 0u;
+        p_handle->transfer->seq    = NULL;
+
+        /* Clear the callback */
+        p_handle->callback.callback          = NULL;
+        p_handle->callback.p_callback_handle = NULL;
+        p_handle->callback.callback_context  = NULL;
+
+        gpio_hal_remove(p_handle->p_scl_gpio);
+        gpio_hal_remove(p_handle->p_sda_gpio);
+
+        p_handle->p_scl_gpio = NULL;
+        p_handle->p_sda_gpio = NULL;
+
+        /* Clear the device fields */
+        p_handle->i2c_port = NULL;
+        p_handle->transfer = NULL;
+    }
+
+    // p_handle->in_use = false;
 }
 
 /********************************************************************************
@@ -634,6 +710,53 @@ uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address,
  ********************************************************************************/
 void i2c_hal_enable(const p_i2c_hal_t p_handle, const bool turn_on, const uint32_t settle_time_ms)
 {
+    if (p_handle == NULL)
+    {
+        return;
+    }
+
+    /* Determine the peripheral clock identifier from the bus id.
+     * Board id 0 -> I2C0 clock: (1u << 5u) | 14u
+     * Board id 1 -> I2C1 clock: (1u << 5u) | 15u */
+    uint32_t i2cClock;
+    if (p_handle->device_id == 0u)
+    {
+        i2cClock = (1u << 5u) | (14u << 0u); /*lint !e835*/
+    }
+    else if (p_handle->device_id == 1u)
+    {
+        i2cClock = (1u << 5u) | (15u << 0u); /*lint !e835*/
+    }
+    else
+    {
+        return; /* unsupported bus id */
+    }
+
+    if (turn_on)
+    {
+        /* Enable the peripheral clock */
+        clock_hal_enable(i2cClock, (bool)true);
+
+        /* Enable the I2C peripheral */
+        device_reg_bit_write(&(p_handle->i2c_port->EN), _I2C_EN_EN_SHIFT, true); /*lint !e9117*/
+
+        /* Allow the bus to settle after power-on */
+        if (settle_time_ms > 0u)
+        {
+            clock_hal_delay(settle_time_ms);
+        }
+    }
+    else
+    {
+        /* Send ABORT+STOP in case a transfer is still in progress */
+        p_handle->i2c_port->CMD = I2C_CMD_ABORT | I2C_CMD_STOP;
+
+        /* Disable the I2C peripheral */
+        device_reg_bit_write(&(p_handle->i2c_port->EN), _I2C_EN_EN_SHIFT, false); /*lint !e9117*/
+
+        /* Disable the peripheral clock to save power */
+        clock_hal_enable(i2cClock, (bool)false);
+    }
 }
 
 /**
@@ -667,6 +790,33 @@ int i2c_hal_register_callback(const p_i2c_hal_t p_handle, p_i2c_callback_t callb
 void i2c_hal_irqhandler(void);
 #endif
 
+uint32_t i2c_hal_scan(const uint32_t i2c_board_id, const uint32_t sda_port, const uint32_t sda_pin,
+                      const uint32_t scl_port, const uint32_t scl_pin, uint32_t last_found_address)
+{
+    p_i2c_hal_t p_handle =
+        i2c_hal_create_device(i2c_board_id, sda_port, sda_pin, scl_port, scl_pin, NULL);
+    if (p_handle == NULL)
+    {
+        return 0; // Failed to create I2C device
+    }
+
+    i2c_hal_enable(p_handle, true, 10U);
+
+    uint8_t  chipdata[2];
+    uint32_t cmd_data      = 0u;
+    uint32_t start_address = (last_found_address < 0x08U) ? 0x08U : (last_found_address + 1u);
+    for (uint32_t i = start_address; i <= 0x77U; i++)
+    {
+        if (i2c_hal_read(p_handle, i << 1, cmd_data, 1u, chipdata, 1u) > 0u)
+        {
+            i2c_hal_remove_device(p_handle);
+            return i; // Found a device at this address
+        }
+        clock_hal_delay(1U); // Small delay between scans
+    }
+    return 0;
+}
+
 static void flushRx(I2C_TypeDef *const i2c)
 {
     uint32_t timeout = 10000u; // Timeout to prevent infinite loop
@@ -685,11 +835,11 @@ static void flushRx(I2C_TypeDef *const i2c)
 
 I2C_TransferReturn_TypeDef I2C_Transfer(p_i2c_hal_t p_handle)
 {
-    uint32_t                              tmp;
-    uint32_t                              pending;
-    static volatile I2C_Transfer_TypeDef *transfer; /*lint !e956*/
-    const I2C_TransferSeq_TypeDef        *seq;
-    bool                                  finished = false;
+    uint32_t tmp;
+    uint32_t pending;
+    // static volatile I2C_Transfer_TypeDef *transfer; /*lint !e956*/
+    const I2C_TransferSeq_TypeDef *seq;
+    bool                           finished = false;
 
     // assert(I2C_REF_VALID(i2c));
 
@@ -794,7 +944,7 @@ I2C_TransferReturn_TypeDef I2C_Transfer(p_i2c_hal_t p_handle)
                     if (seq->flags & I2C_FLAG_READ)
                     {
                         p_handle->transfer->state = i2cStateWFData;
-                        if (seq->buf[transfer->bufIndx].len == 1u)
+                        if (seq->buf[p_handle->transfer->bufIndx].len == 1u)
                         {
                             i2c->CMD = I2C_CMD_NACK;
                         }
@@ -861,7 +1011,7 @@ I2C_TransferReturn_TypeDef I2C_Transfer(p_i2c_hal_t p_handle)
                 /* Indicate a read request. */
                 tmp |= 1u;
                 /* If reading only one byte, prepare the NACK now before START command. */
-                if (seq->buf[transfer->bufIndx].len == 1u)
+                if (seq->buf[p_handle->transfer->bufIndx].len == 1u)
                 {
                     i2c->CMD = I2C_CMD_NACK;
                 }
