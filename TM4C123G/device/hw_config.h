@@ -83,7 +83,8 @@
 #define NUM_TIMERS 2U
 
 // I2C HAL configuration — BoosterPack MKII uses I2C1 on Port A (PA6=SCL, PA7=SDA)
-#define NUM_I2C_DEVICES 2U
+// TM4C123G supports I2C0 – I2C3; set NUM_I2C_DEVICES to cover the highest module used + 1
+#define NUM_I2C_DEVICES 4U
 #define I2C1_SCL_PORT GPIOA_PORT
 #define I2C1_SCL_PIN 6U
 #define I2C1_SDA_PORT GPIOA_PORT

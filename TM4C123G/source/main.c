@@ -73,12 +73,12 @@ int main(void)
 
     timer_hal_start(timer_handle);
 
-    uint32_t last_found_address = 1U;
+    uint32_t last_found_address = 8U;
 
     while (last_found_address != 0U)
     {
         last_found_address =
-            i2c_hal_scan(0u, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT, I2C1_SCL_PIN, last_found_address);
+            i2c_hal_scan(1u, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT, I2C1_SCL_PIN, last_found_address);
         if (last_found_address != 0U)
         {
             // Device found at last_found_address

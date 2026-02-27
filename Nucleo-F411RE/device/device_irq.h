@@ -379,6 +379,22 @@ static inline void NVIC_EnableIRQ(interrupt_id_t IRQn)
 }
 
 /**
+  \brief   Disable Interrupt
+  \details Disables a device specific interrupt in the NVIC interrupt controller.
+  \param [in]      IRQn  Device specific interrupt number.
+  \note    IRQn must not be negative.
+ */
+static inline void NVIC_DisableIRQ(interrupt_id_t IRQn)
+{
+    if ((int32_t)(IRQn) >= 0)
+    {
+        NVIC->ICER[(((uint32_t)IRQn) >> 5UL)] = (uint32_t)(1UL << (((uint32_t)IRQn) & 0x1FUL));
+        asm volatile("dsb 0xF" ::: "memory");
+        asm volatile("isb 0xF" ::: "memory");
+    }
+}
+
+/**
   \brief   Set Interrupt Priority
   \details Sets the priority of a device specific interrupt or a processor exception.
            The interrupt number can be positive to specify a device specific interrupt,

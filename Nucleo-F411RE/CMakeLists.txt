@@ -52,7 +52,6 @@ set(cpu_PARAMS
 )
 
 # Sources
-# Sources
 file(GLOB_RECURSE sources_SRCS
    ${MCU_DIRECTORY}/source/*.c
    ${MCU_DIRECTORY}/hal/*.c
@@ -168,8 +167,8 @@ target_link_options(${CMAKE_PROJECT_NAME} PRIVATE
     -Wl,--start-group
     -lc
     -lm
-#    -lstdc++
-#    -lsupc++
+ #   -lstdc++
+ #   -lsupc++
     -Wl,--end-group
     -Wl,-z,max-page-size=8 # Allow good software remapping across address space (with proper GCC section making)
     -Wl,--print-memory-usage

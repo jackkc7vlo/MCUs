@@ -46,15 +46,39 @@
 /********************************************************************************
  * Defines
  ********************************************************************************/
+#define NUM_I2C_MODULES 4U /**< TM4C123G supports I2C0 – I2C3 */
 
 /********************************************************************************
  * Typedefs & Enums
  ********************************************************************************/
 
+/**
+ * @brief Memory-mapped I2C master register block.
+ * @details Offsets 0x000 – 0x020 are contiguous for the master-side registers
+ *          used by this driver.  Cast the module base address to this type.
+ */
+typedef struct
+{
+    volatile uint32_t MSA;  /**< 0x000  Master Slave Address          */
+    volatile uint32_t MCS;  /**< 0x004  Master Control / Status       */
+    volatile uint32_t MDR;  /**< 0x008  Master Data                   */
+    volatile uint32_t MTPR; /**< 0x00C  Master Timer Period            */
+    volatile uint32_t MIMR; /**< 0x010  Master Interrupt Mask          */
+    volatile uint32_t MRIS; /**< 0x014  Master Raw Interrupt Status    */
+    volatile uint32_t MMIS; /**< 0x018  Master Masked Interrupt Status */
+    volatile uint32_t MICR; /**< 0x01C  Master Interrupt Clear         */
+    volatile uint32_t MCR;  /**< 0x020  Master Configuration           */
+} i2c_master_regs_t;
+
+/** Base addresses for I2C0 – I2C3 master register blocks. */
+static i2c_master_regs_t *const i2c_base[NUM_I2C_MODULES] = {
+    (i2c_master_regs_t *)0x40020000U, /* I2C0 */
+    (i2c_master_regs_t *)0x40021000U, /* I2C1 */
+    (i2c_master_regs_t *)0x40022000U, /* I2C2 */
+    (i2c_master_regs_t *)0x40023000U, /* I2C3 */
+};
+
 static bool i2c_initialized = false;
-/********************************************************************************
- * Defines
- ********************************************************************************/
 
 // support for I2C callbacks
 typedef struct i2c_callback_context_s
@@ -69,9 +93,14 @@ typedef struct i2c_callback_context_s
  ********************************************************************************/
 struct i2c_hal
 {
-    uint32_t               in_use_count; /*!< Indicates if this I2C instance is in use */
+    uint32_t               in_use_count;  /*!< Indicates if this I2C instance is in use */
+    bool                   enabled;       /**< true when hardware is powered on */
+    uint32_t               i2c_module_id; /**< I2C peripheral index (0 – 3) */
+    i2c_master_regs_t     *regs;          /**< Pointer to memory-mapped registers */
     p_gpio_hal_t           p_scl_gpio;
     p_gpio_hal_t           p_sda_gpio; /*lint !e551*/
+    uint8_t                scl_pin;    /**< SCL pin number within the port */
+    uint8_t                sda_pin;    /**< SDA pin number within the port */
     i2c_callback_context_t callback;   /**< Registered interrupt callbacks */
 };
 
@@ -119,12 +148,20 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
         return p_device; // Device already in use
     }
 
+    if (i2c_board_id >= NUM_I2C_MODULES)
+    {
+        return NULL; // I2C module index out of range for this MCU
+    }
+
     p_device->in_use_count++;
+    p_device->i2c_module_id              = i2c_board_id;
+    p_device->regs                       = i2c_base[i2c_board_id];
+    p_device->enabled                    = false;
     p_device->callback.callback          = p_callback;
     p_device->callback.p_callback_handle = NULL; // Set as needed
     p_device->callback.callback_context  = NULL; // Set as needed
 
-    /* Create and initialize GPIO handles for SCL and SDA */
+    /* Create GPIO handles for SCL and SDA (resource allocation only) */
     p_device->p_scl_gpio = gpio_hal_create(scl_port);
     p_device->p_sda_gpio = gpio_hal_create(sda_port);
     if (p_device->p_scl_gpio == NULL || p_device->p_sda_gpio == NULL)
@@ -133,69 +170,45 @@ p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sd
         return NULL;
     }
 
-    /* Enable GPIO port clocks */
-    gpio_hal_init(p_device->p_scl_gpio);
-    if (sda_port != scl_port)
-    {
-        gpio_hal_init(p_device->p_sda_gpio);
-    }
-
-    /* Enable I2C 1 peripheral clock and wait for ready */
-    SYSCTL_RCGCI2C_R |= 0x00000002;
-    while (!(SYSCTL_PRI2C_R & 0x02))
-    {
-    }
-
-    /* Configure SCL pin: alternate function 3 (I2C) */
-    gpio_hal_pin_direction(p_device->p_scl_gpio, (uint8_t)scl_pin, PIN_DIRECTION_ALT);
-    gpio_hal_set_alt_function(p_device->p_scl_gpio, (uint8_t)scl_pin, 3U);
-
-    /* Configure SDA pin: alternate function 3 (I2C), open drain */
-    gpio_hal_pin_direction(p_device->p_sda_gpio, (uint8_t)sda_pin, PIN_DIRECTION_ALT);
-    gpio_hal_set_alt_function(p_device->p_sda_gpio, (uint8_t)sda_pin, 3U);
-    gpio_hal_pin_mode(p_device->p_sda_gpio, (uint8_t)sda_pin, OPENDRAIN);
-
-    /* Enable I2C 1 master and configure clock for 100 kHz */
-    I2C1_MCR_R = 0x0010;
-    /* (1 + TIME_PERIOD) = SYS_CLK / (2 * (SCL_LP + SCL_HP) * I2C_CLK_Freq)
-       TIME_PERIOD = 16,000,000 / (2(6+4) * 100000) - 1 = 7 */
-    I2C1_MTPR_R = 0x07;
+    /* Store pin numbers for enable/disable/cleanup */
+    p_device->scl_pin = (uint8_t)scl_pin;
+    p_device->sda_pin = (uint8_t)sda_pin;
 
     return p_device;
 }
 
 void i2c_hal_remove_device(p_i2c_hal_t p_handle)
 {
-    if (p_handle == NULL)
+    if (p_handle == NULL || p_handle->in_use_count == 0u)
     {
-        return;
+        return; // Nothing to remove
     }
 
     if (--p_handle->in_use_count == 0u)
     {
+        /* Power down the hardware first */
+        i2c_hal_enable(p_handle, false, 0U);
+
+        /* Release GPIO handles */
+        gpio_hal_remove(p_handle->p_scl_gpio);
+        gpio_hal_remove(p_handle->p_sda_gpio);
+        p_handle->p_scl_gpio = NULL;
+        p_handle->p_sda_gpio = NULL;
 
         /* Clear the callback */
         p_handle->callback.callback          = NULL;
         p_handle->callback.p_callback_handle = NULL;
         p_handle->callback.callback_context  = NULL;
-
-        gpio_hal_remove(p_handle->p_scl_gpio);
-        gpio_hal_remove(p_handle->p_sda_gpio);
-
-        p_handle->p_scl_gpio = NULL;
-        p_handle->p_sda_gpio = NULL;
     }
-
-    // p_handle->in_use = false;
 }
 
 /* wait until I2C Master module is no longer busy */
 /*  and if not busy and no error return 0 */
 #define I2C_TIMEOUT_COUNT 10000U /* ~10ms at 16 MHz */
-static int I2C_wait_till_done(void)
+static int I2C_wait_till_done(const i2c_master_regs_t *regs)
 {
     volatile uint32_t timeout = I2C_TIMEOUT_COUNT;
-    while ((I2C1_MCS_R & 1) && (--timeout > 0))
+    while ((regs->MCS & 1) && (--timeout > 0))
     {
         /* wait until I2C master is not busy or timeout */
     }
@@ -203,7 +216,7 @@ static int I2C_wait_till_done(void)
     {
         return -1; /* timed out — bus may be stuck */
     }
-    return I2C1_MCS_R & 0xE; /* return I2C error code, 0 if no error */
+    return regs->MCS & 0xE; /* return I2C error code, 0 if no error */
 }
 
 /********************************************************************************
@@ -221,39 +234,52 @@ static int I2C_wait_till_done(void)
 uint32_t i2c_hal_write(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register,
                        const uint32_t cmd_or_register_len, const uint8_t *const data, const uint_fast16_t data_len)
 {
-    int           error;
-    uint_fast16_t bytes_written  = 0;
-    uint_fast16_t bytes_to_write = data_len;
-    uint8_t      *pdata          = (uint8_t *)data;
+    int                error;
+    uint_fast16_t      bytes_written  = 0;
+    uint_fast16_t      bytes_to_write = data_len;
+    uint8_t           *pdata          = (uint8_t *)data;
+    i2c_master_regs_t *regs           = p_handle->regs;
 
     if (bytes_to_write == 0)
         return (uint32_t)-1; /* no write was performed */
     /* send slave address and starting address */
-    I2C1_MSA_R = slave_address << 1;
-    I2C1_MDR_R = cmd_or_register;
-    I2C1_MCS_R = 3; /* S-(saddr+w)-ACK-maddr-ACK */
+    regs->MSA = slave_address << 1;
+    regs->MDR = cmd_or_register;
+    regs->MCS = 3; /* S-(saddr+w)-ACK-maddr-ACK */
 
-    error = I2C_wait_till_done(); /* wait until write is complete */
+    error = I2C_wait_till_done(regs); /* wait until write is complete */
     if (error)
+    {
+        regs->MCS = 4; /* send STOP to release the bus */
+        while (regs->MCS & 0x40U)
+        {
+        } /* wait for BUSBSY to clear */
         return (uint32_t)error;
+    }
 
     /* send data one byte at a time */
     while (bytes_to_write > 1)
     {
-        I2C1_MDR_R = *pdata++; /* write the next byte */
-        I2C1_MCS_R = 1;        /* -data-ACK- */
-        error      = I2C_wait_till_done();
+        regs->MDR = *pdata++; /* write the next byte */
+        regs->MCS = 1;        /* -data-ACK- */
+        error     = I2C_wait_till_done(regs);
         if (error)
+        {
+            regs->MCS = 4; /* send STOP to release the bus */
+            while (regs->MCS & 0x40U)
+            {
+            } /* wait for BUSBSY to clear */
             return (uint32_t)error;
+        }
         bytes_to_write--;
         bytes_written++;
     }
 
     /* send last byte and a STOP */
-    I2C1_MDR_R = *pdata++; /* write the last byte */
-    I2C1_MCS_R = 5;        /* -data-ACK-P */
-    error      = I2C_wait_till_done();
-    while (I2C1_MCS_R & 0x40)
+    regs->MDR = *pdata++; /* write the last byte */
+    regs->MCS = 5;        /* -data-ACK-P */
+    error     = I2C_wait_till_done(regs);
+    while (regs->MCS & 0x40)
         ; /* wait until bus is not busy */
     if (error)
         return error;
@@ -274,37 +300,50 @@ uint32_t i2c_hal_write(const p_i2c_hal_t p_handle, const uint32_t slave_address,
 uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register,
                       const uint32_t cmd_or_register_len, uint8_t *const data, const uint_fast16_t data_len)
 {
-    int           error;
-    uint_fast16_t bytes_to_read = data_len;
-    uint8_t      *pdata         = data;
+    int                error;
+    uint_fast16_t      bytes_to_read = data_len;
+    uint8_t           *pdata         = data;
+    i2c_master_regs_t *regs          = p_handle->regs;
 
     if (data_len == 0)
         return (uint32_t)-1; /* no read was performed */
 
     /* send slave address and starting address */
-    I2C1_MSA_R = slave_address << 1;
-    I2C1_MDR_R = cmd_or_register;
-    I2C1_MCS_R = 3; /* S-(saddr+w)-ACK-maddr-ACK */
-    error      = I2C_wait_till_done();
+    regs->MSA = slave_address << 1;
+    regs->MDR = cmd_or_register;
+    regs->MCS = 3; /* S-(saddr+w)-ACK-maddr-ACK */
+    error     = I2C_wait_till_done(regs);
     if (error)
+    {
+        regs->MCS = 4; /* send STOP to release the bus */
+        while (regs->MCS & 0x40U)
+        {
+        } /* wait for BUSBSY to clear */
         return (uint32_t)error;
+    }
 
     /* to change bus from write to read, send restart with slave addr */
-    I2C1_MSA_R = (slave_address << 1) + 1; /* restart: -R-(saddr+r)-ACK */
+    regs->MSA = (slave_address << 1) + 1; /* restart: -R-(saddr+r)-ACK */
 
     if (bytes_to_read == 1) /* if last byte, don't ack */
-        I2C1_MCS_R = 7;     /* -data-NACK-P */
+        regs->MCS = 7;      /* -data-NACK-P */
     else                    /* else ack */
-        I2C1_MCS_R = 0xB;   /* -data-ACK- */
-    error = I2C_wait_till_done();
+        regs->MCS = 0xB;    /* -data-ACK- */
+    error = I2C_wait_till_done(regs);
     if (error)
+    {
+        regs->MCS = 4; /* send STOP to release the bus */
+        while (regs->MCS & 0x40U)
+        {
+        } /* wait for BUSBSY to clear */
         return (uint32_t)error;
+    }
 
-    *pdata++ = I2C1_MDR_R; /* store the data received */
+    *pdata++ = regs->MDR; /* store the data received */
 
     if (--bytes_to_read == 0) /* if single byte read, done */
     {
-        while (I2C1_MCS_R & 0x40)
+        while (regs->MCS & 0x40)
             ;     /* wait until bus is not busy */
         return 0; /* no error */
     }
@@ -312,18 +351,24 @@ uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address, 
     /* read the rest of the bytes */
     while (bytes_to_read > 1)
     {
-        I2C1_MCS_R = 9; /* -data-ACK- */
-        error      = I2C_wait_till_done();
+        regs->MCS = 9; /* -data-ACK- */
+        error     = I2C_wait_till_done(regs);
         if (error)
+        {
+            regs->MCS = 4; /* send STOP to release the bus */
+            while (regs->MCS & 0x40U)
+            {
+            } /* wait for BUSBSY to clear */
             return (uint32_t)error;
+        }
         bytes_to_read--;
-        *pdata++ = I2C1_MDR_R; /* store data received */
+        *pdata++ = regs->MDR; /* store data received */
     }
 
-    I2C1_MCS_R = 5; /* -data-NACK-P */
-    error      = I2C_wait_till_done();
-    *pdata     = I2C1_MDR_R; /* store data received */
-    while (I2C1_MCS_R & 0x40)
+    regs->MCS = 5; /* -data-NACK-P */
+    error     = I2C_wait_till_done(regs);
+    *pdata    = regs->MDR; /* store data received */
+    while (regs->MCS & 0x40)
         ; /* wait until bus is not busy */
 
     return 0; /* no error */
@@ -340,6 +385,78 @@ uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address, 
  ********************************************************************************/
 void i2c_hal_enable(const p_i2c_hal_t p_handle, const bool turn_on, const uint32_t settle_time_ms)
 {
+    if (p_handle == NULL || p_handle->in_use_count == 0u)
+    {
+        return;
+    }
+
+    if (turn_on && !p_handle->enabled)
+    {
+        i2c_master_regs_t *regs    = p_handle->regs;
+        uint32_t           clk_bit = (1U << p_handle->i2c_module_id);
+
+        /* Enable GPIO port clocks */
+        gpio_hal_init(p_handle->p_scl_gpio);
+        gpio_hal_init(p_handle->p_sda_gpio);
+
+        /* Enable I2C peripheral clock and wait for ready */
+        SYSCTL_RCGCI2C_R |= clk_bit;
+        while (!(SYSCTL_PRI2C_R & clk_bit))
+        {
+        }
+
+        /* Configure SCL pin: alternate function 3 (I2C) */
+        gpio_hal_pin_direction(p_handle->p_scl_gpio, p_handle->scl_pin, PIN_DIRECTION_ALT);
+        gpio_hal_set_alt_function(p_handle->p_scl_gpio, p_handle->scl_pin, 3U);
+
+        /* Configure SDA pin: alternate function 3 (I2C), open drain */
+        gpio_hal_pin_direction(p_handle->p_sda_gpio, p_handle->sda_pin, PIN_DIRECTION_ALT);
+        gpio_hal_set_alt_function(p_handle->p_sda_gpio, p_handle->sda_pin, 3U);
+        gpio_hal_pin_mode(p_handle->p_sda_gpio, p_handle->sda_pin, OPENDRAIN);
+
+        /* Enable I2C master and configure clock for 100 kHz */
+        regs->MCR = 0x0010;
+        /* (1 + TIME_PERIOD) = SYS_CLK / (2 * (SCL_LP + SCL_HP) * I2C_CLK_Freq)
+           TIME_PERIOD = 16,000,000 / (2(6+4) * 100000) - 1 = 7 */
+        regs->MTPR = 0x07;
+
+        p_handle->enabled = true;
+
+        /* Allow bus devices time to stabilize after power-on */
+        if (settle_time_ms > 0u)
+        {
+            clock_hal_delay(settle_time_ms);
+        }
+    }
+    else if (!turn_on && p_handle->enabled)
+    {
+        i2c_master_regs_t *regs    = p_handle->regs;
+        uint32_t           clk_bit = (1U << p_handle->i2c_module_id);
+
+        /* Disable I2C master */
+        regs->MCR = 0x0000;
+
+        /* Reset SCL pin back to default (input, floating) */
+        if (p_handle->p_scl_gpio != NULL)
+        {
+            gpio_hal_set_alt_function(p_handle->p_scl_gpio, p_handle->scl_pin, 0U);
+            gpio_hal_pin_direction(p_handle->p_scl_gpio, p_handle->scl_pin, PIN_DIRECTION_INPUT);
+            gpio_hal_pin_mode(p_handle->p_scl_gpio, p_handle->scl_pin, FLOAT);
+        }
+
+        /* Reset SDA pin back to default (input, floating) */
+        if (p_handle->p_sda_gpio != NULL)
+        {
+            gpio_hal_set_alt_function(p_handle->p_sda_gpio, p_handle->sda_pin, 0U);
+            gpio_hal_pin_direction(p_handle->p_sda_gpio, p_handle->sda_pin, PIN_DIRECTION_INPUT);
+            gpio_hal_pin_mode(p_handle->p_sda_gpio, p_handle->sda_pin, FLOAT);
+        }
+
+        /* Disable I2C peripheral clock */
+        SYSCTL_RCGCI2C_R &= ~clk_bit;
+
+        p_handle->enabled = false;
+    }
 }
 
 /**

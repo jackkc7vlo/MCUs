@@ -73,7 +73,7 @@ extern "C"
      ********************************************************************************/
     struct gpio_hal
     {
-        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t in_use_count;  /**< Indicates if this GPIO port instance is in use */
         uint32_t port_number;   /**< The GPIO port number */
         void    *config_handle; /**< Pointer to platform-specific context passed to the
                                    HAL implementation. */
@@ -109,7 +109,7 @@ extern "C"
             {
                 p_gpio_hal_t p_gpio_hal = (p_gpio_hal_t)&gpio_hal_ports[j];
 
-                if (p_gpio_hal->callbacks[pin].callback != NULL && p_gpio_hal->in_use == true)
+                if (p_gpio_hal->callbacks[pin].callback != NULL && p_gpio_hal->in_use_count > 0U)
                 {
                     /* Invoke the callback */
                     p_gpio_hal->callbacks[pin].callback(p_gpio_hal->callbacks[pin].p_callback_handle,
@@ -166,7 +166,7 @@ extern "C"
         /* Single pass: check for existing instance and track first free slot */
         for (uint32_t i = 0; i < NUMBER_GPIOS_PORTS; i++)
         {
-            if (gpio_hal_ports[i].in_use == true)
+            if (gpio_hal_ports[i].in_use_count > 0U)
             {
                 if (gpio_hal_ports[i].port_number == port)
                 {
@@ -182,13 +182,177 @@ extern "C"
         /* Initialize free slot if found */
         if (p_free_slot != NULL)
         {
-            p_free_slot->in_use        = true;
+            p_free_slot->in_use_count++;
             p_free_slot->port_number   = port;
             p_free_slot->p_device_gpio = get_gpio_registers(port);
         }
 
         return p_free_slot;
     } /*lint !e818*/
+
+    void gpio_hal_remove(p_gpio_hal_t p_handle)
+    {
+        if (p_handle != NULL && p_handle->in_use_count > 0U)
+        {
+            p_handle->in_use_count--;
+
+            if (p_handle->in_use_count == 0U)
+            {
+                /* Deregister any callbacks for this port and disable EXTI lines if unused */
+                for (uint32_t pin = 0U; pin < 16U; pin++)
+                {
+                    if (p_handle->callbacks[pin].callback != NULL ||
+                        p_handle->callbacks[pin].p_callback_handle != NULL ||
+                        p_handle->callbacks[pin].callback_context != NULL)
+                    {
+                        /* Clear this handle's callback info */
+                        p_handle->callbacks[pin].callback          = NULL;
+                        p_handle->callbacks[pin].p_callback_handle = NULL;
+                        p_handle->callbacks[pin].callback_context  = NULL;
+
+                        /* If no other port has a callback for this EXTI line, disable it */
+                        bool used_elsewhere = false;
+                        for (uint32_t j = 0U; j < NUMBER_GPIOS_PORTS; j++)
+                        {
+                            p_gpio_hal_t p_other = (p_gpio_hal_t)&gpio_hal_ports[j];
+                            if (p_other == p_handle)
+                            {
+                                continue;
+                            }
+                            if (p_other->in_use_count > 0U && p_other->callbacks[pin].callback != NULL)
+                            {
+                                used_elsewhere = true;
+                                break;
+                            }
+                        }
+
+                        if (!used_elsewhere)
+                        {
+                            p_device_exti->imr &= ~(1U << pin);
+                            p_device_exti->rtsr &= ~(1U << pin);
+                            p_device_exti->ftsr &= ~(1U << pin);
+                            p_device_exti->pr = (1U << pin); /* clear pending */
+
+                            /* Clear SYSCFG mapping for this EXTI line */
+                            p_device_syscfg->exticr[pin / 4U] &= ~(0x0FU << (4U * (pin % 4U)));
+                        }
+                    }
+                }
+
+                /* If no callbacks remain anywhere, disable NVIC IRQs for EXTI lines */
+                bool any0_4   = false;
+                bool any5_9   = false;
+                bool any10_15 = false;
+
+                for (uint32_t j = 0U; j < NUMBER_GPIOS_PORTS; j++)
+                {
+                    p_gpio_hal_t p_other = (p_gpio_hal_t)&gpio_hal_ports[j];
+                    if (p_other->in_use_count == 0U)
+                    {
+                        continue;
+                    }
+
+                    for (uint32_t pin = 0U; pin <= 4U; pin++)
+                    {
+                        if (p_other->callbacks[pin].callback != NULL)
+                        {
+                            any0_4 = true;
+                            break;
+                        }
+                    }
+                    for (uint32_t pin = 5U; pin <= 9U; pin++)
+                    {
+                        if (p_other->callbacks[pin].callback != NULL)
+                        {
+                            any5_9 = true;
+                            break;
+                        }
+                    }
+                    for (uint32_t pin = 10U; pin <= 15U; pin++)
+                    {
+                        if (p_other->callbacks[pin].callback != NULL)
+                        {
+                            any10_15 = true;
+                            break;
+                        }
+                    }
+
+                    if (any0_4 && any5_9 && any10_15)
+                    {
+                        break;
+                    }
+                }
+
+                if (!any0_4)
+                {
+                    NVIC_DisableIRQ(EXTI0_IRQN);
+                    NVIC_DisableIRQ(EXTI1_IRQN);
+                    NVIC_DisableIRQ(EXTI2_IRQN);
+                    NVIC_DisableIRQ(EXTI3_IRQN);
+                    NVIC_DisableIRQ(EXTI4_IRQN);
+                }
+                if (!any5_9)
+                {
+                    NVIC_DisableIRQ(EXTI9_5_IRQN);
+                }
+                if (!any10_15)
+                {
+                    NVIC_DisableIRQ(EXTI15_10_IRQN);
+                }
+
+                /* Disable GPIO port clock if no other handle is using this port */
+                bool port_used = false;
+                for (uint32_t j = 0U; j < NUMBER_GPIOS_PORTS; j++)
+                {
+                    if (gpio_hal_ports[j].in_use_count > 0U && gpio_hal_ports[j].port_number == p_handle->port_number)
+                    {
+                        port_used = true;
+                        break;
+                    }
+                }
+
+                if (!port_used)
+                {
+                    switch (p_handle->port_number)
+                    {
+                    case GPIOA_PORT:
+                        p_device_rcc->ahb1enr &= ~RCC_AHB1ENR_GPIOAEN_BIT;
+                        break;
+                    case GPIOB_PORT:
+                        p_device_rcc->ahb1enr &= ~RCC_AHB1ENR_GPIOBEN_BIT;
+                        break;
+                    case GPIOC_PORT:
+                        p_device_rcc->ahb1enr &= ~RCC_AHB1ENR_GPIOCEN_BIT;
+                        break;
+                    case GPIOD_PORT:
+                        p_device_rcc->ahb1enr &= ~RCC_AHB1ENR_GPIODEN_BIT;
+                        break;
+                    case GPIOE_PORT:
+                        p_device_rcc->ahb1enr &= ~RCC_AHB1ENR_GPIOEEN_BIT;
+                        break;
+                    case GPIOH_PORT:
+                        p_device_rcc->ahb1enr &= ~RCC_AHB1ENR_GPIOHEN_BIT;
+                        break;
+                    default:
+                        break;
+                    }
+                }
+
+                /* Clear handle bookkeeping */
+                p_handle->port_number   = 0U;
+                p_handle->p_device_gpio = NULL;
+                p_handle->config_handle = NULL;
+
+                /* Ensure callbacks array is cleared */
+                for (uint32_t pin = 0U; pin < 16U; pin++)
+                {
+                    p_handle->callbacks[pin].callback          = NULL;
+                    p_handle->callbacks[pin].p_callback_handle = NULL;
+                    p_handle->callbacks[pin].callback_context  = NULL;
+                }
+            }
+        }
+    }
 
     void gpio_hal_init(p_gpio_hal_t p_handle)
     {
@@ -248,6 +412,21 @@ extern "C"
             default:
                 return false;
             }
+        }
+        return true;
+    }
+
+    bool gpio_hal_set_alt_function(p_gpio_hal_t p_handle, uint8_t pin, uint8_t alt_func)
+    {
+        reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+
+        if (p_gpio != NULL)
+        {
+            uint32_t reg_index = pin / 8U;        /* afr[0] for pins 0-7, afr[1] for pins 8-15 */
+            uint32_t shift     = 4U * (pin % 8U); /* 4 bits per pin within the register        */
+            uint32_t temp      = p_gpio->afr[reg_index] & ~(0x0FU << shift);
+
+            p_gpio->afr[reg_index] = temp | ((alt_func & 0x0FU) << shift);
         }
         return true;
     }

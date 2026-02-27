@@ -18,6 +18,7 @@
             "searchDir": [
                 "/usr/share/openocd/scripts"
             ],
+            "device": "STM32F401RE",
             "runToEntryPoint": "main",
             "svdFile": "/home/jack/STMicroelectronics/STM32Cube/STM32CubeProgrammer/SVD/STM32F401.svd",
             "showDevDebugOutput": "raw"

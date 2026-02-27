@@ -159,6 +159,7 @@ extern "C"
             {
                 if (gpio_hal_ports[i].port_number == port)
                 {
+                    gpio_hal_ports[i].in_use_count++;
                     return (p_gpio_hal_t)&gpio_hal_ports[i]; /* Return existing */
                 }
             }
@@ -191,17 +192,90 @@ extern "C"
         }
         if (p_handle->in_use_count == 0u)
         {
-            /* Disable any registered interrupts for all pins on this port */
+            reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
 
-            /* Reset all pins on this port to disabled (default) mode */
+            if (p_gpio != NULL)
+            {
+                /* Disable any registered interrupts for all pins on this port */
+                p_gpio->im  = 0u;    /* Mask all pin interrupts */
+                p_gpio->icr = 0xFFu; /* Clear any pending interrupts */
 
-            /* Clear output tracking */
+                /* Disable NVIC IRQ for this GPIO port */
+                switch (p_handle->port_number)
+                {
+                case GPIOA_PORT:
+                    NVIC_DIS0_R = (1U << (INT_GPIOA - 16));
+                    break;
+                case GPIOB_PORT:
+                    NVIC_DIS0_R = (1U << (INT_GPIOB - 16));
+                    break;
+                case GPIOC_PORT:
+                    NVIC_DIS0_R = (1U << (INT_GPIOC - 16));
+                    break;
+                case GPIOD_PORT:
+                    NVIC_DIS0_R = (1U << (INT_GPIOD - 16));
+                    break;
+                case GPIOE_PORT:
+                    NVIC_DIS0_R = (1U << (INT_GPIOE - 16));
+                    break;
+                case GPIOF_PORT:
+                    NVIC_DIS0_R = (1U << (INT_GPIOF - 16));
+                    break;
+                default:
+                    break;
+                }
+
+                /* Reset all pins on this port to default (input, disabled) */
+                p_gpio->den   = 0u; /* Disable digital function */
+                p_gpio->dir   = 0u; /* All pins input (reset default) */
+                p_gpio->afsel = 0u; /* Disable alternate functions */
+                p_gpio->pctl  = 0u; /* Clear port control mux */
+
+                /* Clear pull-up, pull-down, and open-drain */
+                p_gpio->pur = 0u;
+                p_gpio->pdr = 0u;
+                p_gpio->odr = 0u;
+
+                /* Clear output data */
+                p_gpio->data = 0u;
+            }
+
+            /* Clear all registered callbacks */
+            for (uint8_t i = 0u; i < GPIOS_INTERRUPTS; i++)
+            {
+                p_handle->callbacks[i].callback          = NULL;
+                p_handle->callbacks[i].p_callback_handle = NULL;
+                p_handle->callbacks[i].callback_context  = NULL;
+            }
+
+            /* Disable GPIO port clock */
+            switch (p_handle->port_number)
+            {
+            case GPIOA_PORT:
+                SYSCTL_RCGCGPIO_R &= ~SYSCTL_RCGCGPIO_R0;
+                break;
+            case GPIOB_PORT:
+                SYSCTL_RCGCGPIO_R &= ~SYSCTL_RCGCGPIO_R1;
+                break;
+            case GPIOC_PORT:
+                SYSCTL_RCGCGPIO_R &= ~SYSCTL_RCGCGPIO_R2;
+                break;
+            case GPIOD_PORT:
+                SYSCTL_RCGCGPIO_R &= ~SYSCTL_RCGCGPIO_R3;
+                break;
+            case GPIOE_PORT:
+                SYSCTL_RCGCGPIO_R &= ~SYSCTL_RCGCGPIO_R4;
+                break;
+            case GPIOF_PORT:
+                SYSCTL_RCGCGPIO_R &= ~SYSCTL_RCGCGPIO_R5;
+                break;
+            default:
+                break;
+            }
 
             /* Clear device pointer */
             p_handle->p_device_gpio = NULL;
             p_handle->port_number   = 0u;
-
-            // clock_hal_enable(CLOCK_GPIO, false);
         }
     }
 

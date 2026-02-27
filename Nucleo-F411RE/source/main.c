@@ -22,6 +22,7 @@
 #include "drv_button.h"
 #include "drv_led.h"
 #include "gpio_hal.h"
+#include "i2c_hal.h"
 #include "timer_hal.h"
 #include <stddef.h>
 #include <stdint.h>
@@ -58,6 +59,19 @@ int main(void)
         drv_button_init(p_button_handle);
     }
 #endif // HW_CONFIG_GPIO AND USE_BUTTON_GPIO
+    uint32_t last_found_address = 8U;
+
+    while (last_found_address != 0U)
+    {
+        last_found_address =
+            i2c_hal_scan(0U, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT, I2C1_SCL_PIN, last_found_address);
+        if (last_found_address != 0U)
+        {
+            // Device found at last_found_address
+            volatile uint32_t dummy = last_found_address; // Set breakpoint here to inspect detected device address
+            (void)dummy;
+        }
+    }
 
     for (;;)
     {

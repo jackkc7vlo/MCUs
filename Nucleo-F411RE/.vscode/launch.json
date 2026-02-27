@@ -13,7 +13,7 @@
             "servertype": "openocd",
             "serverpath": "/usr/bin/openocd",
             "configFiles": [
-                "debug.cfg"
+                "debug.cfg",
             ],
             "searchDir": [
                 "/usr/share/openocd/scripts" 
