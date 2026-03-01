@@ -46,7 +46,7 @@
 #define HW_CONFIG_GPIO 1
 // number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 16
-#define NUMBER_GPIOS_PORTS 2
+#define NUMBER_GPIOS_PORTS 5
 
 #define USE_PORTA_GPIO 0
 #define USE_PORTB_GPIO 0
@@ -79,7 +79,15 @@
 #define HW_CONFIG_BSP 0
 #define HW_CONFIG_ADC 0
 #define HW_CONFIG_SPI 0
-#define HW_CONFIG_I2C 0
+#define HW_CONFIG_I2C 1
+
+#define NUM_I2C_DEVICES 3U        /*!< I2C1, I2C2, I2C3 on STM32F411xE */
+#define USE_I2C_INTERRUPTS 0      /*!< 1 = use interrupt-driven I2C     */
+#define I2C_DEFAULT_SPEED 100000U /*!< Default I2C clock speed (Hz)     */
+#define I2C1_SDA_PORT GPIOB_PORT
+#define I2C1_SDA_PIN 7U
+#define I2C1_SCL_PORT GPIOB_PORT
+#define I2C1_SCL_PIN 8U
 
 #define NUM_TIMERS 2U
 

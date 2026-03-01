@@ -53,7 +53,6 @@ extern "C"
 #include <assert.h>
 #include <clock_hal.h>
 // #include <device_dwt.h>
-#include <device_gpio.h>
 #include <device_rcc.h>
 #include <device_regs.h>
 #include <device_systick.h>
@@ -90,7 +89,6 @@ extern "C"
      */
     static inline void SysTick_Init()
     {
-
         // Set SysTick to interrupt every ms
         SysTick->LOAD = 2000u - 1u; /* reload register - assuming running at 2MHz */
         SysTick->VAL  = 0u;         /* Load the SysTick Counter Value */
@@ -100,7 +98,6 @@ extern "C"
 
     void SysTick_Handler(void)
     {
-
         ms_counter++;
         if (delay_ms > 0)
         {
@@ -123,6 +120,7 @@ extern "C"
 
     void clock_hal_init(void)
     {
+
         // 1. Enable MSI (already on, but safe)
         p_device_rcc->cr |= RCC_CR_MSION;
         while ((p_device_rcc->cr & RCC_CR_MSIRDY) == 0)
@@ -242,8 +240,8 @@ extern "C"
      */
     uint32_t clock_hal_get_timer_freq(void)
     {
-        /* Decode PPRE1 (bits 10:8 of RCC_CFGR) */
-        const uint32_t ppre1_bits = (p_device_rcc->cfgr & 0x00001C00U) >> 10U;
+        /* Decode PPRE1 (bits 10:8 of RCC_CFGR per RM0394 §6.4.3) */
+        const uint32_t ppre1_bits = (p_device_rcc->cfgr & 0x00000700U) >> 8U;
         uint32_t       ppre1_div  = 1U;
 
         /* encoding: 0..3 => HCLK not divided (div=1)

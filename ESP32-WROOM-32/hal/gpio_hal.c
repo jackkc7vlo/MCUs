@@ -43,6 +43,8 @@ extern "C"
 #endif /* __cplusplus */
 /*lint -esym(793,__*)*/
 #include <hw_config.h>
+#include <stdbool.h>
+#include <stdint.h>
 #if HW_CONFIG_GPIO == 1
 #include "device_gpio.h"
 #include "driver/gpio.h"
@@ -51,9 +53,6 @@ extern "C"
 #include <esp_log.h>
 #include <gpio_hal.h>
 #include <hal/gpio_types.h>
-#include <hw_config.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <stdlib.h> /*lint -e129*/
 
     /********************************************************************************
@@ -64,7 +63,7 @@ extern "C"
      ********************************************************************************/
     struct gpio_hal
     {
-        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t in_use_count;  /**< Indicates if this GPIO port instance is in use */
         uint32_t port_number;   /**< The GPIO port number */
         void    *config_handle; /**< Pointer to platform-specific context passed to the
                                    HAL implementation. */
@@ -98,25 +97,49 @@ extern "C"
 
     p_gpio_hal_t gpio_hal_create(uint32_t port)
     {
+        p_gpio_hal_t p_free_slot = NULL;
+
+        /* Single pass: check for existing instance and track first free slot */
         for (uint32_t i = 0; i < NUMBER_GPIOS_PORTS; i++)
         {
-            if (gpio_hal_ports[i].port_number == port && gpio_hal_ports[i].in_use == true)
+            if (gpio_hal_ports[i].in_use_count > 0U)
             {
-                return (p_gpio_hal_t)&gpio_hal_ports[i];
+                if (gpio_hal_ports[i].port_number == port)
+                {
+                    gpio_hal_ports[i].in_use_count++;
+                    return (p_gpio_hal_t)&gpio_hal_ports[i]; /* Return existing */
+                }
             }
-        }
-        for (uint32_t i = 0; i < NUMBER_GPIOS_PORTS; i++)
-        {
-            if (gpio_hal_ports[i].in_use == false)
+            else if (p_free_slot == NULL)
             {
-                gpio_hal_ports[i].in_use      = true;
-                gpio_hal_ports[i].port_number = port;
-                return (p_gpio_hal_t)&gpio_hal_ports[i];
+                p_free_slot = (p_gpio_hal_t)&gpio_hal_ports[i]; /* Track first free */
             }
         }
 
-        return NULL;
+        /* Initialize free slot if found */
+        if (p_free_slot != NULL)
+        {
+            p_free_slot->in_use_count++;
+            p_free_slot->port_number = port;
+            // p_free_slot->p_device_gpio = get_gpio_registers(port);
+        }
+        return p_free_slot; /* Return new or NULL if no free slot */
     } /*lint !e818*/
+
+    void gpio_hal_remove(p_gpio_hal_t p_handle)
+    {
+        if (p_handle != NULL && p_handle->in_use_count > 0U)
+        {
+            p_handle->in_use_count--;
+            if (p_handle->in_use_count == 0U)
+            {
+                // Clean up hardware resources if needed
+                // e.g., disable interrupts, reset pin configurations, etc.
+                p_handle->config_handle = NULL;
+                p_handle->p_device_gpio = NULL;
+            }
+        }
+    }
 
     void gpio_hal_init(p_gpio_hal_t p_handle)
     {

@@ -170,6 +170,7 @@ extern "C"
             {
                 if (gpio_hal_ports[i].port_number == port)
                 {
+                    gpio_hal_ports[i].in_use_count++;
                     return (p_gpio_hal_t)&gpio_hal_ports[i]; /* Return existing */
                 }
             }

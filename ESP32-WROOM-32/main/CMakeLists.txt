@@ -23,4 +23,4 @@ file(GLOB_RECURSE SRC_FILES
 
 idf_component_register(SRCS "main.c" ${SRC_FILES}
                     INCLUDE_DIRS "." ${PROJECT_INCLUDE_DIRECTORIES}
-                    REQUIRES esp_driver_gptimer esp_timer esp_driver_gpio) 
+                    REQUIRES esp_driver_gptimer esp_timer esp_driver_gpio esp_driver_i2c log) 

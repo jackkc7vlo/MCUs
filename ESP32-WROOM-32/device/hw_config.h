@@ -46,7 +46,7 @@
 #define HW_CONFIG_GPIO 1
 // number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 1
-#define NUMBER_GPIOS_PORTS 2
+#define NUMBER_GPIOS_PORTS 5
 
 #define USE_LED_GPIO 1U
 #define NUMBER_OF_LEDS 1U
@@ -70,7 +70,20 @@
 #define HW_CONFIG_BSP 0
 #define HW_CONFIG_ADC 0
 #define HW_CONFIG_SPI 0
-#define HW_CONFIG_I2C 0
+#define HW_CONFIG_I2C 1
+
+#define NUM_I2C_DEVICES 1U
+#define USE_I2C_INTERRUPTS 0      /*!< 1 = use interrupt-driven I2C     */
+#define I2C_DEFAULT_SPEED 100000U /*!< Default I2C clock speed (Hz)     */
+#define I2C_BUS 0                 /*!< I2C bus number (I2C_NUM_0)       */
+#define HW_CONFIG_I2C_SDA_PORT 21 /*!< GPIO 21 - SDA                   */
+#define HW_CONFIG_I2C_SCL_PORT 22 /*!< GPIO 22 - SCL                   */
+#define I2C1_SDA_PORT 0U
+#define I2C1_SDA_PIN 21U
+#define I2C1_SCL_PORT 0U
+#define I2C1_SCL_PIN 22U
+
+#define HW_CONFIG_I2C_NUM_DEVICES 1U
 
 #define NUM_TIMERS 2U
 #endif /* HW_CONFIG_H_ */
