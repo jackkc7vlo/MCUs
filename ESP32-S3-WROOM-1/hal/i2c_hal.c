@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (C) 2025 by Jack Wilson
+ * Copyright (C) 2026 by Jack Wilson
  *
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
@@ -14,7 +14,7 @@
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *
- ************************(C) COPYRIGHT 2025 Jack Wilson **********************/
+ ************************(C) COPYRIGHT 2026 Jack Wilson **********************/
 /**
  * @file i2c_hal.c
  * @brief Generic I2C HAL interface definition.
@@ -22,12 +22,16 @@
  * interact with I2C peripherals on any supported platform.
  *
  * @author  Jack Wilson
- * @date    September 26, 2025
+ * @date    February 12, 2026
  * @version 1.0.0
  *
- * @copyright Copyright (c) 2025 Jack Wilson
+ * @copyright Copyright (c) 2026 Jack Wilson
  * @license MIT License
  */
+
+/********************************************************************************
+ * Multiple include protection
+ ********************************************************************************/
 
 /********************************************************************************
  * Includes
@@ -38,37 +42,24 @@ extern "C"
 {
 #endif /* __cplusplus */
 #include "driver/i2c_master.h"
-#include <assert.h>
-#include <gpio_hal.h>
+#include <esp_log.h>
 #include <hw_config.h>
 #include <i2c_hal.h>
 #include <stdbool.h>
-#include <stdlib.h> /*lint -e129*/
+#include <stdint.h> /*lint -e129*/
 #include <string.h>
 
-    void    i2c_hal_write(const void *p_i2c_device, const uint32_t cmd_or_register, const uint32_t cmd_or_register_len,
-                          const uint8_t *const data, const uint_fast16_t data_len);
-    uint8_t i2c_hal_read(const void *p_i2c_device, const uint32_t cmd_or_register, const uint32_t cmd_or_register_len,
-                         uint8_t *const data, const uint_fast16_t data_len);
-    void    i2c_hal_enable(const void *p_i2c_device, const bool turn_on, const uint32_t settle_time_ms);
+#if HW_CONFIG_I2C == 1u
 
-    // static i2c_master_dev_handle_t i2c_master_device_handle;
-    /*lint -esym(793,__*)*/
-    /*lint -e749 -e754 -e751 -e750 -e9026*/
     /********************************************************************************
      * Defines
      ********************************************************************************/
-#define WRITE_BIT I2C_MASTER_WRITE /*!< I2C master write */
-#define READ_BIT I2C_MASTER_READ   /*!< I2C master read */
-#define ACK_VAL 0x0                /*!< I2C ack value */
-#define NACK_VAL 0x1               /*!< I2C nack value */
-#define ACK_CHECK_EN 0x1           /*!< I2C master will check ack from slave*/
-#define ACK_CHECK_DIS 0x0          /*!< I2C master will not check ack from slave */
+
     /********************************************************************************
      * Typedefs & Enums
      ********************************************************************************/
-#if HW_CONFIG_I2C == 1u
-    static bool i2c_initialized = false; /*lint !e956*/
+    static const char *TAG             = "i2c_hal"; /*lint !e956*/
+    static bool        i2c_initialized = false;     /*lint !e956*/
 
     typedef struct i2c_hal_master_def_s
     {
@@ -79,276 +70,420 @@ extern "C"
         i2c_master_bus_handle_t i2c_bus_handle; /*!< I2C configuration */
     } i2c_hal_master_def_t;
 
-    static i2c_hal_master_def_t i2c_master_device = {
-        .device_id      = I2C_BUS,
-        .sda_port_num   = HW_CONFIG_I2C_SDA_PORT,
-        .scl_port_num   = HW_CONFIG_I2C_SCL_PORT,
-        .is_initialized = false,
+    /** @brief I2C callback context (mirrors the pattern used in gpio_hal.c) */
+    typedef struct i2c_callback_context_s
+    {
+        p_i2c_callback_t callback;          /**< Registered interrupt callback */
+        void            *p_callback_handle; /**< Pointer to callback context   */
+        void            *callback_context;  /**< User callback context         */
+    } i2c_callback_context_t;
+
+    struct i2c_hal
+    {
+        uint32_t               in_use_count;  /*!< Indicates if this I2C instance is in use */
+        uint32_t               board_id;      /**< I2C board id (0, 1, 2) */
+        bool                   enabled;       /**< true when hardware is powered on */
+        i2c_hal_master_def_t   device_config; /**< I2C configuration parameters */
+        i2c_callback_context_t callback;      /**< Registered interrupt callbacks */
     };
 
-    /*
-        typedef struct i2c_hal_device_def_s
+    static i2c_hal_t i2c_hal_pool[NUM_I2C_DEVICES] = {0};
+
+    /********************************************************************************
+     * Device handle cache – avoids repeated add/remove on the I2C master bus.
+     ********************************************************************************/
+#define I2C_DEV_CACHE_SIZE 4u
+
+    typedef struct i2c_dev_cache_entry_s
+    {
+        uint16_t                slave_address;
+        bool                    valid;
+        i2c_master_dev_handle_t handle;
+    } i2c_dev_cache_entry_t;
+
+    static i2c_dev_cache_entry_t s_dev_cache[I2C_DEV_CACHE_SIZE] = {0};
+
+    /** @brief Get (or create and cache) a device handle for the given slave address */
+    static i2c_master_dev_handle_t get_or_create_dev_handle(p_i2c_hal_t p_handle, uint32_t slave_address)
+    {
+        /* Search cache first */
+        for (uint32_t i = 0u; i < I2C_DEV_CACHE_SIZE; i++)
         {
-            i2c_hal_master_def_t   *p_master;       //!< pointer to master device
-            uint32_t                device_address; //!< device address
-            uint32_t                address_length; //!< device address length
-            p_i2c_callback_t        p_callback;     //!< callback function
-            i2c_master_dev_handle_t device_handle;  //!< I2C device handle
-        } i2c_hal_device_def_t;
-    */
-#if HW_CONFIG_I2C_NUM_DEVICES >= 1
-    static i2c_device_hal_t i2c_device1 = {.p_master          = &i2c_master_device,
-                                           .device_address    = HW_CONFIG_I2C1_ADDRESS,
-                                           .address_length    = I2C_ADDR_BIT_LEN_7,
-                                           .p_callback        = NULL,
-                                           .write             = i2c_hal_write,
-                                           .read              = i2c_hal_read,
-                                           .enable            = i2c_hal_enable,
-                                           .i2c_device_handle = NULL};
-#endif
-#if HW_CONFIG_I2C_NUM_DEVICES >= 2
-    static i2c_device_hal_t i2c_device2 = {.p_master          = &i2c_master_device,
-                                           .device_address    = HW_CONFIG_I2C2_ADDRESS,
-                                           .address_length    = I2C_ADDR_BIT_LEN_7,
-                                           .p_callback        = NULL,
-                                           .write             = i2c_hal_write,
-                                           .read              = i2c_hal_read,
-                                           .enable            = i2c_hal_enable,
-                                           .i2c_device_handle = NULL};
-#else
-#pragma message("Too Many I2C Devices Defined!")
-#endif
+            if (s_dev_cache[i].valid && s_dev_cache[i].slave_address == (uint16_t)slave_address)
+            {
+                return s_dev_cache[i].handle;
+            }
+        }
 
-    // static p_gpio_hal_def_t p_i2c_enable = NULL; /*lint !e956*/
+        /* Not cached – create a new device handle on the master bus */
+        i2c_device_config_t dev_cfg = {
+            .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+            .device_address  = (uint16_t)slave_address,
+            .scl_speed_hz    = I2C_DEFAULT_SPEED,
+        };
+        i2c_master_dev_handle_t dev_handle = NULL;
+        esp_err_t err = i2c_master_bus_add_device(p_handle->device_config.i2c_bus_handle, &dev_cfg, &dev_handle);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "i2c_master_bus_add_device failed for addr 0x%02lx: %s", (unsigned long)slave_address,
+                     esp_err_to_name(err));
+            return NULL;
+        }
 
-    // static p_gpio_hal_def_t p_scl_gpio = NULL; /*lint !e956*/
+        /* Find a free cache slot */
+        for (uint32_t i = 0u; i < I2C_DEV_CACHE_SIZE; i++)
+        {
+            if (!s_dev_cache[i].valid)
+            {
+                s_dev_cache[i].slave_address = (uint16_t)slave_address;
+                s_dev_cache[i].handle        = dev_handle;
+                s_dev_cache[i].valid         = true;
+                return dev_handle;
+            }
+        }
+
+        /* Cache full – evict the first entry */
+        (void)i2c_master_bus_rm_device(s_dev_cache[0].handle);
+        s_dev_cache[0].slave_address = (uint16_t)slave_address;
+        s_dev_cache[0].handle        = dev_handle;
+        s_dev_cache[0].valid         = true;
+        return dev_handle;
+    }
 
     /********************************************************************************
      * Function Prototypes
      ********************************************************************************/
 
-    /********************************************************************************/
-
-    void i2c_hal_initialize(const uint32_t speed)
+    /********************************************************************************
+     * @brief          Initialization function for the I2C driver
+     * @retval         None
+     ********************************************************************************/
+    void i2c_hal_initialize(void)
     {
-        if (i2c_initialized)
-        {
-            return;
-        }
-
-        i2c_master_bus_config_t bus_config = {
-            .sda_io_num        = (gpio_num_t)i2c_master_device.sda_port_num,
-            .scl_io_num        = (gpio_num_t)i2c_master_device.scl_port_num,
-            .clk_source        = I2C_CLK_SRC_DEFAULT,
-            .i2c_port          = I2C_NUM_0,
-            .glitch_ignore_cnt = 7,
-            .intr_priority     = 1,
-        };
-
-        i2c_new_master_bus(&bus_config, &i2c_master_device.i2c_bus_handle);
-        i2c_initialized                  = true;
-        i2c_master_device.is_initialized = true;
-    }
-
-    /********************************************************************************/
-    bool i2c_hal_is_initialized(void)
-    {
-        return i2c_initialized;
-    }
-
-    /********************************************************************************/
-    void *i2c_hal_create_device(const uint32_t i2c_device_id, const p_i2c_callback_t p_callback)
-    {
-        i2c_device_hal_t *p_i2c_device = NULL;
-        switch (i2c_device_id)
-        {
-#if HW_CONFIG_I2C_NUM_DEVICES >= 1
-        case 1u:
-            p_i2c_device = &i2c_device1;
-            break;
-
-#endif
-#if HW_CONFIG_I2C_NUM_DEVICES >= 2
-        case 2u:
-            p_i2c_device = &i2c_device2;
-            break;
-#endif
-        default:
-
-            return NULL;
-        }
-        if (p_i2c_device->i2c_device_handle != NULL)
-        {
-            return p_i2c_device;
-            p_i2c_device->p_callback = p_callback;
-        }
-
         if (!i2c_initialized)
         {
-            i2c_hal_initialize(100000U);
+            i2c_initialized = true;
         }
-
-        i2c_hal_master_def_t *p_master         = &i2c_master_device;
-        p_i2c_device->p_master                 = p_master;
-        p_i2c_device->p_callback               = p_callback;
-        i2c_device_config_t i2c_mst_dev_config = {
-            .dev_addr_length = (i2c_addr_bit_len_t)p_i2c_device->address_length,
-            .device_address  = (uint16_t)p_i2c_device->device_address,
-            .scl_speed_hz    = 100000U,
-            .scl_wait_us     = 0,
-            .flags =
-                {
-                    .disable_ack_check = 0,
-                },
-        };
-        if (p_i2c_device->i2c_device_handle != NULL)
-        {
-            return p_i2c_device;
-        }
-        i2c_master_dev_handle_t i2c_master_device_handle;
-        i2c_master_bus_add_device(p_master->i2c_bus_handle, &i2c_mst_dev_config, &i2c_master_device_handle);
-        p_i2c_device->i2c_device_handle = &i2c_master_device_handle;
-
-        return p_i2c_device;
     }
 
-    /********************************************************************************/
-
-    void i2c_hal_write(const void *p_i2c_device, const uint32_t cmd_or_register, const uint32_t cmd_or_register_len,
-                       const uint8_t *const data, const uint_fast16_t data_len)
+    /********************************************************************************
+     * @brief          Check if the I2C driver is initialized
+     * @retval         true if initialized, false otherwise
+     ********************************************************************************/
+    bool i2c_hal_is_initialized(void)
     {
-
-        const uint8_t           chipdata[2] = {(uint8_t)(cmd_or_register >> 8), (uint8_t)cmd_or_register};
-        uint32_t                data_size   = data_len + cmd_or_register_len;
-        uint8_t                 tx_data[2 + data_len];
-        i2c_device_hal_t       *p_i2c_dev      = (i2c_device_hal_t *)p_i2c_device;
-        i2c_master_dev_handle_t i2c_dev_handle = *(i2c_master_dev_handle_t *)p_i2c_dev->i2c_device_handle;
-
-        /* Prepare data to send */
-
-        if (cmd_or_register_len > 0)
+        if (!i2c_initialized)
         {
-            tx_data[0] = chipdata[cmd_or_register_len & 1u];
-            if (cmd_or_register_len == 2u)
+            return false;
+        }
+        return true;
+    }
+
+    /********************************************************************************
+     * @brief          Create an I2C device
+     * @param[in]      i2c_board_id - The id of the I2C on the board (i.e 0, 1, 2..)
+     * @param[in]      sda_port - the port used for the SDA line
+     * @param[in]      sda_pin - the pin on the sda_port to use for the SDA line
+     * @param[in]      scl_port - the port used for the SCL line
+     * @param[in]      scl_pin - the pin on the scl_port to use for the SCL line
+     * @param[in]      p_callback - Pointer to the callback function
+     * @retval         Pointer to the I2C device
+     ********************************************************************************/
+    p_i2c_hal_t i2c_hal_create_device(const uint32_t i2c_board_id, const uint32_t sda_port, const uint32_t sda_pin,
+                                      const uint32_t scl_port, const uint32_t scl_pin,
+                                      const p_i2c_callback_t p_callback)
+    {
+        (void)sda_port; // Not used in this implementation, but included for API consistency
+        (void)scl_port; // Not used in this implementation, but included for API consistency
+
+        ESP_LOGI(TAG, "i2c_hal_is_initialized: %d", i2c_hal_is_initialized());
+        if (!i2c_hal_is_initialized())
+        {
+
+            i2c_hal_initialize();
+            if (!i2c_hal_is_initialized())
             {
-                tx_data[1] = chipdata[0];
-                memcpy(&tx_data[2], data, data_len);
+                return NULL;
+            }
+        }
+
+        /* Look for an existing instance or a free slot */
+        p_i2c_hal_t p_free_slot = NULL;
+        for (uint32_t i = 0u; i < NUM_I2C_DEVICES; i++)
+        {
+            if (i2c_hal_pool[i].in_use_count > 0u)
+            {
+                if (i2c_hal_pool[i].board_id == i2c_board_id)
+                {
+                    i2c_hal_pool[i].in_use_count++;
+                    return &i2c_hal_pool[i]; /* return existing */
+                }
+            }
+            else if (p_free_slot == NULL)
+            {
+                p_free_slot = &i2c_hal_pool[i];
+            }
+        }
+
+        if (p_free_slot != NULL)
+        {
+            p_free_slot->device_config.device_id    = i2c_board_id;
+            p_free_slot->device_config.sda_port_num = sda_pin;
+            p_free_slot->device_config.scl_port_num = scl_pin;
+
+            i2c_master_bus_config_t bus_config = {
+                .sda_io_num        = (gpio_num_t)p_free_slot->device_config.sda_port_num,
+                .scl_io_num        = (gpio_num_t)p_free_slot->device_config.scl_port_num,
+                .clk_source        = I2C_CLK_SRC_DEFAULT,
+                .i2c_port          = (i2c_port_num_t)p_free_slot->device_config.device_id,
+                .glitch_ignore_cnt = 7,
+                .intr_priority     = 0,
+            };
+            bus_config.flags.enable_internal_pullup = true;
+
+            esp_err_t ret = i2c_new_master_bus(&bus_config, &p_free_slot->device_config.i2c_bus_handle);
+            if (ret == ESP_OK)
+            {
+                p_free_slot->device_config.is_initialized = true;
+                // i2c_initialized                  = true;
+                ESP_LOGI(TAG, "I2C master bus initialized (SDA=%lu, SCL=%lu)",
+                         (unsigned long)p_free_slot->device_config.sda_port_num,
+                         (unsigned long)p_free_slot->device_config.scl_port_num);
             }
             else
             {
-                memcpy(&tx_data[1], data, data_len);
+                ESP_LOGE(TAG, "i2c_new_master_bus failed: %s", esp_err_to_name(ret));
+            }
+            p_free_slot->in_use_count = 1u;
+            p_free_slot->board_id     = i2c_board_id;
+            p_free_slot->enabled      = true;
+            // p_free_slot->device_config.p_master     = &i2c_master_device;
+            p_free_slot->callback.callback          = p_callback;
+            p_free_slot->callback.p_callback_handle = NULL;
+            p_free_slot->callback.callback_context  = NULL;
+        }
+        return p_free_slot;
+    }
+
+    /********************************************************************************
+     * @brief          Remove an I2C device
+     * @param[in]      p_handle - pointer to the i2c device
+     * @retval         None
+     ********************************************************************************/
+    void i2c_hal_remove_device(p_i2c_hal_t p_handle)
+    {
+        if (p_handle != NULL && p_handle->in_use_count > 0u)
+        {
+            p_handle->in_use_count--;
+            if (p_handle->in_use_count == 0u)
+            {
+                p_handle->enabled = false;
+                // p_handle->device_config.p_master     = NULL;
+                p_handle->callback.callback          = NULL;
+                p_handle->callback.p_callback_handle = NULL;
+                p_handle->callback.callback_context  = NULL;
             }
         }
-        else
+    }
+
+    /********************************************************************************
+     * @brief          Write function for the I2C driver
+     * @param[in]      p_handle - pointer to the i2c device
+     * @param[in]      cmd_or_register - The register or command to write data to
+     *(i.e. memory address)
+     * @param[in]      cmd_or_register_len - Length of the register or command in
+     *bytes
+     * @param[in]      data -  pointer to data to send (may be words depending on
+     *MCU)
+     * @param[in]      data_len - Length of data to write in bytes
+     * @retval         Number of bytes written
+     ********************************************************************************/
+    uint32_t i2c_hal_write(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register,
+                           const uint32_t cmd_or_register_len, const uint8_t *const data, const uint_fast16_t data_len)
+    {
+        if (p_handle == NULL || !i2c_initialized)
         {
-            memcpy(&tx_data[0], data, data_len);
+            return 0u;
         }
 
-        ESP_ERROR_CHECK(i2c_master_transmit(i2c_dev_handle, tx_data, data_size, 5000)); // -1 for infinite timeout
+        i2c_master_dev_handle_t dev_handle = get_or_create_dev_handle(p_handle, slave_address);
+        if (dev_handle == NULL)
+        {
+            return 0u;
+        }
 
-        /*
-        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-        i2c_master_start(cmd);
-        i2c_master_write_byte(cmd, (p_i2c_device->device_id << 1) | WRITE_BIT, ACK_CHECK_EN);
-        if (cmd_or_register_len > 0)
+        /* Build transmit buffer: [register bytes] [data bytes] */
+        uint32_t total_len = cmd_or_register_len + (uint32_t)data_len;
+        if (total_len == 0u)
         {
-            i2c_master_write(cmd, chipdata + (cmd_or_register_len & 1u), cmd_or_register_len, ACK_CHECK_EN);
+            return 0u;
         }
-        if (data_len > 0)
+        uint8_t tx_buf[2u + data_len]; /*lint !e9030 !e9033*/
+
+        /* Pack register / command bytes (big-endian) */
+        for (uint32_t i = 0u; i < cmd_or_register_len; i++)
         {
-            i2c_master_write(cmd, data, data_len, ACK_CHECK_EN);
+            tx_buf[i] = (uint8_t)(cmd_or_register >> (8u * (cmd_or_register_len - 1u - i)));
         }
-        i2c_master_stop(cmd);
-        i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
-        i2c_cmd_link_delete(cmd);
-        */
-        // return data_len;
-    } /*lint !e818*/
+
+        /* Append payload */
+        if (data != NULL && data_len > 0u)
+        {
+            memcpy(&tx_buf[cmd_or_register_len], data, data_len);
+        }
+
+        esp_err_t err = i2c_master_transmit(dev_handle, tx_buf, total_len, -1);
+        if (err != ESP_OK)
+        {
+            ESP_LOGE(TAG, "i2c_master_transmit failed (addr 0x%02lx): %s", (unsigned long)slave_address,
+                     esp_err_to_name(err));
+            return 0u;
+        }
+        return (uint32_t)data_len;
+    }
 
     /********************************************************************************
      * @brief          Read function for the I2C driver
-     * @param[in]      i2c_device_id - I2C device ID
-     * @param[in]      cmd_or_register - The memory address in the i2c device (i.e. registers)
+     * @param[in]      p_handle - pointer to the i2c device
+     * @param[in]      cmd_or_register - The register or command to write data to
+     *(i.e. memory address)
+     * @param[in]      cmd_or_register_len - Length of the register or command in
+     *bytes
      * @param[in]      data -  pointer to data (in bytes!) to read
      * @param[in]      data_len - Length of data to read in bytes
      * @retval         Number of bytes read
      ********************************************************************************/
-
-    uint8_t i2c_hal_read(const void *p_i2c_device, const uint32_t cmd_or_register, const uint32_t cmd_or_register_len,
-                         uint8_t *const data, const uint_fast16_t data_len)
+    uint32_t i2c_hal_read(const p_i2c_hal_t p_handle, const uint32_t slave_address, const uint32_t cmd_or_register,
+                          const uint32_t cmd_or_register_len, uint8_t *const data, const uint_fast16_t data_len)
     {
-        const uint8_t           chipdata[2]    = {(uint8_t)(cmd_or_register >> 8), (uint8_t)cmd_or_register};
-        int                     ret            = 0;
-        i2c_device_hal_t       *p_i2c_dev      = (i2c_device_hal_t *)p_i2c_device;
-        i2c_master_dev_handle_t i2c_dev_handle = *(i2c_master_dev_handle_t *)p_i2c_dev->i2c_device_handle;
-        uint8_t                 tx[2];
-        // const uint8_t           tx[2]          = {(uint8_t)(cmd_or_register >> 8), (uint8_t)cmd_or_register};
-        if (cmd_or_register_len > 0)
+        if (p_handle == NULL || !i2c_initialized || data == NULL)
         {
-            tx[0] = chipdata[cmd_or_register_len & 1u];
-            if (cmd_or_register_len == 2u)
+            return 0u;
+        }
+
+        i2c_master_dev_handle_t dev_handle = get_or_create_dev_handle(p_handle, slave_address);
+        if (dev_handle == NULL)
+        {
+            return 0u;
+        }
+
+        esp_err_t err;
+        if (cmd_or_register_len > 0u)
+        {
+            /* Write register address then read data (repeated-start) */
+            uint8_t tx_buf[2];
+            for (uint32_t i = 0u; i < cmd_or_register_len; i++)
             {
-                tx[1] = chipdata[0];
-                // memcpy(&tx_data[2], data, data_len);
+                tx_buf[i] = (uint8_t)(cmd_or_register >> (8u * (cmd_or_register_len - 1u - i)));
             }
-            else
-            {
-                // memcpy(&tx_data[1], data, data_len);
-            }
+            err = i2c_master_transmit_receive(dev_handle, tx_buf, cmd_or_register_len, data, (size_t)data_len, -1);
         }
         else
         {
-            // memcpy(&tx_data[0], data, data_len);
+            /* No register / command – pure read */
+            err = i2c_master_receive(dev_handle, data, (size_t)data_len, -1);
         }
-        // ESP_ERROR_CHECK(i2c_master_receive(i2c_dev_handle, data, data_len, 500));
-        ESP_ERROR_CHECK(i2c_master_transmit_receive(i2c_dev_handle, tx, cmd_or_register_len, data, data_len, 500));
 
-        /*
-        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-        i2c_master_start(cmd);
-        i2c_master_write_byte(cmd, (p_i2c_device->device_id << 1) | WRITE_BIT, ACK_CHECK_EN);
-        if (cmd_or_register_len > 0)
+        if (err != ESP_OK)
         {
-            i2c_master_write(cmd, chipdata + (cmd_or_register_len & 1u), cmd_or_register_len, ACK_CHECK_EN);
+            ESP_LOGE(TAG, "i2c read failed (addr 0x%02lx): %s", (unsigned long)slave_address, esp_err_to_name(err));
+            return 0u;
         }
-        i2c_master_stop(cmd);
-        ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
-        i2c_cmd_link_delete(cmd);
-
-        if (data_len >= 1)
-        {
-            vTaskDelay(30 / portTICK_PERIOD_MS);
-            cmd = i2c_cmd_link_create();
-            i2c_master_start(cmd);
-            i2c_master_write_byte(cmd, (p_i2c_device->device_id << 1) | READ_BIT, ACK_CHECK_EN);
-            if (data_len > 1)
-            {
-                i2c_master_read(cmd, data, data_len - 1, ACK_VAL);
-            }
-            i2c_master_read_byte(cmd, data + data_len - 1, NACK_VAL);
-            i2c_master_stop(cmd);
-            ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
-            i2c_cmd_link_delete(cmd);
-        }
-        */
-        if (ret == ESP_OK)
-        {
-            return data_len;
-        }
-        return 0;
-    } /*lint !e818*/
+        return (uint32_t)data_len;
+    }
 
     /********************************************************************************
      * @brief  Enable (power on) or disable (power off) to the i2c devices
+     * @param[in]      p_handle - pointer to the i2c device
+     * @param[in]      turn_on - enable or disable the i2c devices (POWER_ON or
+     *POWER_OFF)
+     * @param[in]      settle_time_ms - number of milliseconds to wait for the i2c
+     *                                  devices power on
      * @retval
      ********************************************************************************/
-    void i2c_hal_enable(const void *p_i2c_device, const bool turn_on, const uint32_t settle_time_us)
+    void i2c_hal_enable(const p_i2c_hal_t p_handle, const bool turn_on, const uint32_t settle_time_ms)
     {
+        if (p_handle == NULL)
+        {
+            return;
+        }
 
-        // clock_hal_delay(settle_time_us);
+        if (turn_on && !i2c_initialized)
+        {
+            i2c_hal_initialize();
+        }
+
+        p_handle->enabled = turn_on;
+        (void)settle_time_ms; /* ESP32 I2C has no power-gate; settle delay unused */
     }
 
-#endif // HW_CONFIG_I2C
+    /**
+     * @brief Register a callback to be invoked on GPIO interrupt events.
+     * @param[in] handle Pointer to platform-specific context associated with the
+     * callback.
+     * @param callback Function to invoke when an interrupt fires. May be NULL to
+     * clear the registration.
+     *
+     * @return 0 on success, negative value when registration fails.
+     */
+    int i2c_hal_register_callback(const p_i2c_hal_t p_handle, p_i2c_callback_t callback, void *p_callback_context)
+    {
+        if (p_handle == NULL)
+        {
+            return -1;
+        }
+        p_handle->callback.callback         = callback;
+        p_handle->callback.callback_context = p_callback_context;
+        return 0;
+    }
+
+#if USE_I2C_INTERRUPTS == 1
+    /**
+     * @brief  Handle an I2C interrupt
+     * @retval None
+     */
+    void i2c_hal_irqhandler(void);
+#endif
+
+    /********************************************************************************
+     * @brief          Scan for i2c devices on the bus
+     * @param[in]      i2c_board_id - The id of the I2C on the board (i.e 0, 1, 2..)
+     * @param[in]      sda_port - the port used for the SDA line
+     * @param[in]      sda_pin - the pin on the sda_port to use for the SDA line
+     * @param[in]      scl_port - the port used for the SCL line
+     * @param[in]      scl_pin - the pin on the scl_port to use for the SCL line
+     * @param[in]      last_found_address - the last address that was found (use 0 for initial scan)
+     * @retval         address of the first detected device on the bus, or 0 if no devices are found
+     ********************************************************************************/
+    uint32_t i2c_hal_scan(const uint32_t i2c_board_id, const uint32_t sda_port, const uint32_t sda_pin,
+                          const uint32_t scl_port, const uint32_t scl_pin, uint32_t last_found_address)
+    {
+        (void)i2c_board_id;
+        (void)sda_port;
+        (void)sda_pin;
+        (void)scl_port;
+        (void)scl_pin;
+
+        p_i2c_hal_t p_handle = i2c_hal_create_device(i2c_board_id, sda_port, sda_pin, scl_port, scl_pin, NULL);
+        if (p_handle == NULL)
+        {
+            return 0; // Failed to create I2C device
+        }
+
+        /* Probe addresses starting after last_found_address up to 127 */
+        for (uint32_t addr = last_found_address + 1u; addr <= 127u; addr++)
+        {
+            esp_err_t ret = i2c_master_probe(p_handle->device_config.i2c_bus_handle, (uint16_t)addr, 50);
+            if (ret == ESP_OK)
+            {
+                ESP_LOGI(TAG, "I2C device found at address 0x%02lx", (unsigned long)addr);
+                return addr;
+            }
+        }
+        return 0u;
+    }
+
+#endif /* USE_I2C */
 
 #ifdef __cplusplus
 } /* extern "C" */

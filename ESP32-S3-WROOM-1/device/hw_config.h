@@ -47,7 +47,7 @@
 #define HW_CONFIG_GPIO 1
 // number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 1
-#define NUMBER_GPIOS_PORTS 2
+#define NUMBER_GPIOS_PORTS 5
 
 #define USE_LED_GPIO 1U
 #define NUMBER_OF_LEDS 1U
@@ -75,43 +75,20 @@
 
 // begin SPI configuration
 #define HW_CONFIG_SPI 0
-#define AUTO_CS 1
-#define HW_CONFIG_SPI_NUM_BUS 1
-#define HW_CONFIG_SPI1_DEVICE_ID 1u
-#define HW_CONFIG_SPI1_MOSI_PORT 17
-#define HW_CONFIG_SPI1_MISO_PORT -1
-#define HW_CONFIG_SPI1_SCLK_PORT 16
-#define HW_CONFIG_SPI1_CS_PORT 15
-#define SPI_USE_BUS_1 1u
-#define SPI_USE_BUS_2 0u
-#define SPI_USE_BUS_3 0u
-#define SPI_USE_BUS_4 0u
-#if SPI_USE_BUS_1 + SPI_USE_BUS_2 + SPI_USE_BUS_3 + SPI_USE_BUS_4 > HW_CONFIG_SPI_NUM_BUS
-#pragma message("Too Many SPI Buses Defined!")
-#endif
-#define HW_CONFIG_SPI_NUM_DEVICES 1u
+#define HW_CONFIG_I2C 1
 
-#define SPI_USE_DEVICE_1 1u
-#define SPI1_BUS_ID 1U
-#define SPI1_BAUD_RATE 10000000u
-#define SPI1_QUEUE_SIZE 7u
-#define SPI1_MODE 0
+#define NUM_I2C_DEVICES 1U
+#define USE_I2C_INTERRUPTS 0      /*!< 1 = use interrupt-driven I2C     */
+#define I2C_DEFAULT_SPEED 100000U /*!< Default I2C clock speed (Hz)     */
+#define I2C_BUS 0                 /*!< I2C bus number (I2C_NUM_0)       */
+#define HW_CONFIG_I2C_SDA_PORT 8  /*!< GPIO 8 - SDA                   */
+#define HW_CONFIG_I2C_SCL_PORT 9  /*!< GPIO 9 - SCL                   */
+#define I2C1_SDA_PORT 0U
+#define I2C1_SDA_PIN 8U
+#define I2C1_SCL_PORT 0U
+#define I2C1_SCL_PIN 9U
 
-#define SPI_USE_DEVICE_2 0u
-#define SPI_USE_DEVICE_3 0u
-#define SPI_USE_DEVICE_4 0u
-#if SPI_USE_DEVICE_1 + SPI_USE_DEVICE_2 + SPI_USE_DEVICE_3 + SPI_USE_DEVICE_4 > HW_CONFIG_SPI_NUM_DEVICES
-#pragma message("Too Many SPI Devices Defined!")
-#endif
-#define HAS_ILI9341 0U
-#define ILI9341_SPI_CS_PORT 0u
-#define ILI9341_SPI_CS_PIN 15u
-#define ILI9341_SPI_DC_PORT 0u
-#define ILI9341_SPI_DC_PIN 2u
-#define ILI9341_SPI_RESET_PORT 0u
-#define ILI9341_SPI_RESET_PIN 16u
-#define ILI9341_SPI_BCKL_PORT 0u
-#define ILI9341_SPI_BCKL_PIN 0x5u
+#define HW_CONFIG_I2C_NUM_DEVICES 1U
 
 #define SPI_HOST SPI3_HOST
 #define SPI_DEVICE_1 1u
@@ -148,12 +125,7 @@
 // end SPI configuration
 
 // begin I2C configuration
-#define HW_CONFIG_I2C 0U
-#define I2C_BUS I2C_NUM_0
-#define HW_CONFIG_I2C_SDA_PORT 5
-#define HW_CONFIG_I2C_SCL_PORT 4
 
-#define HW_CONFIG_I2C_NUM_DEVICES 2
 #define HW_CONFIG_I2C1_ADDRESS 0x18 // es8311 address
 
 #define HW_CONFIG_ADDRESS_LENGTH_1 7

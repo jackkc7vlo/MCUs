@@ -16,8 +16,8 @@
  *
  ************************(C) COPYRIGHT 2026 Jack Wilson **********************/
 /**
- * @file i2c_hal.h
- * @brief Generic I2C interface definition.
+ * @file i2c_hal.c
+ * @brief Generic I2C HAL interface definition.
  * @details Outlines the portable I2C abstraction used to configure and
  * interact with I2C peripherals on any supported platform.
  *
@@ -70,13 +70,6 @@ extern "C"
         i2c_master_bus_handle_t i2c_bus_handle; /*!< I2C configuration */
     } i2c_hal_master_def_t;
 
-    static i2c_hal_master_def_t i2c_master_device = {
-        .device_id      = I2C_BUS,
-        .sda_port_num   = HW_CONFIG_I2C_SDA_PORT,
-        .scl_port_num   = HW_CONFIG_I2C_SCL_PORT,
-        .is_initialized = false,
-    };
-
     /** @brief I2C callback context (mirrors the pattern used in gpio_hal.c) */
     typedef struct i2c_callback_context_s
     {
@@ -85,19 +78,12 @@ extern "C"
         void            *callback_context;  /**< User callback context         */
     } i2c_callback_context_t;
 
-    /** @brief Platform-specific I2C device configuration */
-    typedef struct i2c_device_hal_s
-    {
-        i2c_hal_master_def_t *p_master; /**< Pointer to master bus definition */
-    } i2c_device_hal_t;
-    typedef i2c_device_hal_t *p_i2c_device_hal_t;
-
     struct i2c_hal
     {
         uint32_t               in_use_count;  /*!< Indicates if this I2C instance is in use */
         uint32_t               board_id;      /**< I2C board id (0, 1, 2) */
         bool                   enabled;       /**< true when hardware is powered on */
-        i2c_device_hal_t       device_config; /**< I2C configuration parameters */
+        i2c_hal_master_def_t   device_config; /**< I2C configuration parameters */
         i2c_callback_context_t callback;      /**< Registered interrupt callbacks */
     };
 
@@ -118,7 +104,7 @@ extern "C"
     static i2c_dev_cache_entry_t s_dev_cache[I2C_DEV_CACHE_SIZE] = {0};
 
     /** @brief Get (or create and cache) a device handle for the given slave address */
-    static i2c_master_dev_handle_t get_or_create_dev_handle(uint32_t slave_address)
+    static i2c_master_dev_handle_t get_or_create_dev_handle(p_i2c_hal_t p_handle, uint32_t slave_address)
     {
         /* Search cache first */
         for (uint32_t i = 0u; i < I2C_DEV_CACHE_SIZE; i++)
@@ -136,7 +122,7 @@ extern "C"
             .scl_speed_hz    = I2C_DEFAULT_SPEED,
         };
         i2c_master_dev_handle_t dev_handle = NULL;
-        esp_err_t err = i2c_master_bus_add_device(i2c_master_device.i2c_bus_handle, &dev_cfg, &dev_handle);
+        esp_err_t err = i2c_master_bus_add_device(p_handle->device_config.i2c_bus_handle, &dev_cfg, &dev_handle);
         if (err != ESP_OK)
         {
             ESP_LOGE(TAG, "i2c_master_bus_add_device failed for addr 0x%02lx: %s", (unsigned long)slave_address,
@@ -176,28 +162,7 @@ extern "C"
     {
         if (!i2c_initialized)
         {
-            i2c_master_bus_config_t bus_config = {
-                .sda_io_num        = (gpio_num_t)i2c_master_device.sda_port_num,
-                .scl_io_num        = (gpio_num_t)i2c_master_device.scl_port_num,
-                .clk_source        = I2C_CLK_SRC_DEFAULT,
-                .i2c_port          = (i2c_port_num_t)i2c_master_device.device_id,
-                .glitch_ignore_cnt = 7,
-                .intr_priority     = 0,
-            };
-            bus_config.flags.enable_internal_pullup = true;
-
-            esp_err_t ret = i2c_new_master_bus(&bus_config, &i2c_master_device.i2c_bus_handle);
-            if (ret == ESP_OK)
-            {
-                i2c_master_device.is_initialized = true;
-                i2c_initialized                  = true;
-                ESP_LOGI(TAG, "I2C master bus initialized (SDA=%lu, SCL=%lu)",
-                         (unsigned long)i2c_master_device.sda_port_num, (unsigned long)i2c_master_device.scl_port_num);
-            }
-            else
-            {
-                ESP_LOGE(TAG, "i2c_new_master_bus failed: %s", esp_err_to_name(ret));
-            }
+            i2c_initialized = true;
         }
     }
 
@@ -228,13 +193,13 @@ extern "C"
                                       const uint32_t scl_port, const uint32_t scl_pin,
                                       const p_i2c_callback_t p_callback)
     {
-        (void)sda_port;
-        (void)sda_pin;
-        (void)scl_port;
-        (void)scl_pin;
+        (void)sda_port; // Not used in this implementation, but included for API consistency
+        (void)scl_port; // Not used in this implementation, but included for API consistency
 
+        ESP_LOGI(TAG, "i2c_hal_is_initialized: %d", i2c_hal_is_initialized());
         if (!i2c_hal_is_initialized())
         {
+
             i2c_hal_initialize();
             if (!i2c_hal_is_initialized())
             {
@@ -262,10 +227,37 @@ extern "C"
 
         if (p_free_slot != NULL)
         {
-            p_free_slot->in_use_count               = 1u;
-            p_free_slot->board_id                   = i2c_board_id;
-            p_free_slot->enabled                    = true;
-            p_free_slot->device_config.p_master     = &i2c_master_device;
+            p_free_slot->device_config.device_id    = i2c_board_id;
+            p_free_slot->device_config.sda_port_num = sda_pin;
+            p_free_slot->device_config.scl_port_num = scl_pin;
+
+            i2c_master_bus_config_t bus_config = {
+                .sda_io_num        = (gpio_num_t)p_free_slot->device_config.sda_port_num,
+                .scl_io_num        = (gpio_num_t)p_free_slot->device_config.scl_port_num,
+                .clk_source        = I2C_CLK_SRC_DEFAULT,
+                .i2c_port          = (i2c_port_num_t)p_free_slot->device_config.device_id,
+                .glitch_ignore_cnt = 7,
+                .intr_priority     = 0,
+            };
+            bus_config.flags.enable_internal_pullup = true;
+
+            esp_err_t ret = i2c_new_master_bus(&bus_config, &p_free_slot->device_config.i2c_bus_handle);
+            if (ret == ESP_OK)
+            {
+                p_free_slot->device_config.is_initialized = true;
+                // i2c_initialized                  = true;
+                ESP_LOGI(TAG, "I2C master bus initialized (SDA=%lu, SCL=%lu)",
+                         (unsigned long)p_free_slot->device_config.sda_port_num,
+                         (unsigned long)p_free_slot->device_config.scl_port_num);
+            }
+            else
+            {
+                ESP_LOGE(TAG, "i2c_new_master_bus failed: %s", esp_err_to_name(ret));
+            }
+            p_free_slot->in_use_count = 1u;
+            p_free_slot->board_id     = i2c_board_id;
+            p_free_slot->enabled      = true;
+            // p_free_slot->device_config.p_master     = &i2c_master_device;
             p_free_slot->callback.callback          = p_callback;
             p_free_slot->callback.p_callback_handle = NULL;
             p_free_slot->callback.callback_context  = NULL;
@@ -285,8 +277,8 @@ extern "C"
             p_handle->in_use_count--;
             if (p_handle->in_use_count == 0u)
             {
-                p_handle->enabled                    = false;
-                p_handle->device_config.p_master     = NULL;
+                p_handle->enabled = false;
+                // p_handle->device_config.p_master     = NULL;
                 p_handle->callback.callback          = NULL;
                 p_handle->callback.p_callback_handle = NULL;
                 p_handle->callback.callback_context  = NULL;
@@ -314,7 +306,7 @@ extern "C"
             return 0u;
         }
 
-        i2c_master_dev_handle_t dev_handle = get_or_create_dev_handle(slave_address);
+        i2c_master_dev_handle_t dev_handle = get_or_create_dev_handle(p_handle, slave_address);
         if (dev_handle == NULL)
         {
             return 0u;
@@ -369,7 +361,7 @@ extern "C"
             return 0u;
         }
 
-        i2c_master_dev_handle_t dev_handle = get_or_create_dev_handle(slave_address);
+        i2c_master_dev_handle_t dev_handle = get_or_create_dev_handle(p_handle, slave_address);
         if (dev_handle == NULL)
         {
             return 0u;
@@ -472,19 +464,16 @@ extern "C"
         (void)scl_port;
         (void)scl_pin;
 
-        if (!i2c_initialized)
+        p_i2c_hal_t p_handle = i2c_hal_create_device(i2c_board_id, sda_port, sda_pin, scl_port, scl_pin, NULL);
+        if (p_handle == NULL)
         {
-            i2c_hal_initialize();
-            if (!i2c_initialized)
-            {
-                return 0u;
-            }
+            return 0; // Failed to create I2C device
         }
 
         /* Probe addresses starting after last_found_address up to 127 */
         for (uint32_t addr = last_found_address + 1u; addr <= 127u; addr++)
         {
-            esp_err_t ret = i2c_master_probe(i2c_master_device.i2c_bus_handle, (uint16_t)addr, 50);
+            esp_err_t ret = i2c_master_probe(p_handle->device_config.i2c_bus_handle, (uint16_t)addr, 50);
             if (ret == ESP_OK)
             {
                 ESP_LOGI(TAG, "I2C device found at address 0x%02lx", (unsigned long)addr);
