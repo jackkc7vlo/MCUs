@@ -250,6 +250,12 @@ extern "C"
     {
         return NSS_SFRO_FREQUENCY / clock_hal_get_divisor();
     }
+
+    uint32_t clock_hal_get_timer_freq(void)
+    {
+        /* APB1 timers are clocked at the same frequency as the system clock */
+        return clock_hal_get_freq();
+    }
     /**
      * @brief Get the number of nanoseconds per tick.
      * @return          uint32_t The nanoseconds per tick

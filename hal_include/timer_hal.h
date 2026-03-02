@@ -44,6 +44,7 @@ extern "C"
 {
 #endif /* __cplusplus */
 #include <hw_config.h>
+#include <stdbool.h>
 #include <stdint.h> /*lint -e129*/
 
     /********************************************************************************

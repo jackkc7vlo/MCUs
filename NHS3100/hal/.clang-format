@@ -1,0 +1,11 @@
+    # Example .clang-format file
+    
+    BasedOnStyle: LLVM # Or Google, Chromium, Microsoft, etc.
+    IndentWidth: 4
+    TabWidth: 4
+    UseTab: Never
+    BreakBeforeBraces: Allman # This is the crucial setting
+    AllowShortFunctionsOnASingleLine: None
+    AlignConsecutiveAssignments: Consecutive
+    AlignConsecutiveDeclarations: Consecutive
+    ColumnLimit: 100

@@ -71,7 +71,7 @@ extern "C"
      ********************************************************************************/
     struct gpio_hal
     {
-        bool     in_use;        /**< Indicates if this GPIO port instance is in use */
+        uint32_t in_use_count;  /**< Indicates if this GPIO port instance is in use */
         uint32_t port_number;   /**< The GPIO port number */
         void    *config_handle; /**< Pointer to platform-specific context passed to the
                                    HAL implementation. */
@@ -125,19 +125,43 @@ extern "C"
     p_gpio_hal_t gpio_hal_create(uint32_t port)
     {
         const uint32_t i = 0;
-        if (gpio_hal_ports[i].in_use == false)
+        if (gpio_hal_ports[i].in_use_count == 0)
         {
             p_device_gpio_a->imse = 0; // Disable all interrupts initially
         }
 
         // There is only one GPIO port on the NHS3100
-        gpio_hal_ports[i].in_use        = true;
+        gpio_hal_ports[i].in_use_count++;
         gpio_hal_ports[i].port_number   = port;
         gpio_hal_ports[i].p_device_gpio = (void *)p_device_gpio_a;
 
         return (p_gpio_hal_t)&gpio_hal_ports[i];
 
     } /*lint !e818*/
+
+    void gpio_hal_remove(p_gpio_hal_t p_handle)
+    {
+        if (p_handle == NULL)
+        {
+            return;
+        }
+        if (p_handle->in_use_count > 0u)
+        {
+            p_handle->in_use_count--;
+        }
+        if (p_handle->in_use_count == 0u)
+        {
+            reg_gpio_t *p_gpio = (reg_gpio_t *)p_handle->p_device_gpio;
+
+            if (p_gpio != NULL)
+            {
+
+                /* Clear device pointer */
+                p_handle->p_device_gpio = NULL;
+                p_handle->port_number   = 0u;
+            }
+        }
+    }
 
     void gpio_hal_init(p_gpio_hal_t p_handle)
     {
@@ -146,8 +170,8 @@ extern "C"
         if (p_gpio_hal != NULL)
         {
             p_syscon->ahbclkctrl |= (SYSCON_AHBCLKCTRL_GPIO_BIT | SYSCON_AHBCLKCTRL_IOCON_BIT) &
-                                    SYSCON_AHBCLKCTRL_BITS_THAT_CAN_BE_SET; // Enable GPIO and IOCON
-                                                                            // clock
+                                    SYSCON_AHBCLKCTRL_BITS_THAT_CAN_BE_SET; // Enable GPIO and
+                                                                            // IOCON clock
         }
     }
 

@@ -72,6 +72,15 @@
 #define HW_CONFIG_BSP 0
 #define HW_CONFIG_ADC 0
 #define HW_CONFIG_SPI 0
-#define HW_CONFIG_I2C 0
+#define HW_CONFIG_I2C 1
+
+// Timer HAL configuration
+#define NUM_TIMERS 2U
+
+#define NUM_I2C_DEVICES 4U
+#define I2C1_SCL_PORT GPIOA_PORT
+#define I2C1_SCL_PIN 6U
+#define I2C1_SDA_PORT GPIOA_PORT
+#define I2C1_SDA_PIN 7U
 
 #endif /* HW_CONFIG_H_ */

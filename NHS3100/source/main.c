@@ -8,11 +8,13 @@
 #include <hw_config.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <timer_hal.h>
 // #include "device_gpio.h"
 // #include "device_iocon.h"
 // #include "device_syscon.h"
 
-static p_led_handle_t led_handle = NULL;
+static p_led_handle_t led_handle   = NULL;
+static p_timer_hal_t  timer_handle = NULL;
 
 void button_callback(button_state_t button_state)
 {
@@ -31,7 +33,7 @@ void button_callback(button_state_t button_state)
 int main(void) /*lint !e970*/
 {
     clock_hal_init();
-    // Enable GPIO and IOCON clock
+    timer_handle = timer_hal_create(1000U, false, NULL);
 
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
     led_handle = drv_led_create(LED_PORT, LED_PIN);
@@ -53,7 +55,12 @@ int main(void) /*lint !e970*/
 
     while (1)
     {
-        clock_hal_delay(1000); // delay 1 second to allow debugger to connect
+        // clock_hal_delay(1000); // delay 1 second to allow debugger to connect
+        timer_hal_start(timer_handle);
+        while (!timer_hal_get_overflow(timer_handle))
+        {
+        }
+        timer_hal_reset_count(timer_handle);
 #if HW_CONFIG_GPIO == 1
         drv_led_toggle(led_handle);
         //  gpio_hal_toggle_state(gpio_handle, LED_PIN);
