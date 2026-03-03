@@ -6,6 +6,7 @@
 #include <clock_hal.h>
 #include <gpio_hal.h>
 #include <hw_config.h>
+#include <i2c_hal.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <timer_hal.h>
@@ -13,9 +14,11 @@
 // #include "device_iocon.h"
 // #include "device_syscon.h"
 
-static p_led_handle_t led_handle   = NULL;
-static p_timer_hal_t  timer_handle = NULL;
+static p_led_handle_t led_handle      = NULL;
+static p_timer_hal_t  timer_handle    = NULL;
+static p_gpio_hal_t   chip_pwr_handle = NULL;
 
+#if USE_BUTTON_GPIO == 1U
 void button_callback(button_state_t button_state)
 {
 
@@ -24,6 +27,7 @@ void button_callback(button_state_t button_state)
         drv_led_toggle(led_handle);
     }
 }
+#endif
 
 /**
  * @brief
@@ -33,10 +37,17 @@ void button_callback(button_state_t button_state)
 int main(void) /*lint !e970*/
 {
     clock_hal_init();
-    timer_handle = timer_hal_create(1000U, false, NULL);
+    timer_handle    = timer_hal_create(1000U, false, NULL);
+    chip_pwr_handle = gpio_hal_create(0);
+    if (chip_pwr_handle != NULL)
+    {
+        gpio_hal_init(chip_pwr_handle);
+        gpio_hal_pin_direction(chip_pwr_handle, CHIP_PWR_PIN, PIN_DIRECTION_OUTPUT);
+        gpio_hal_set_state(chip_pwr_handle, CHIP_PWR_PIN, true);
+    }
 
 #if HW_CONFIG_GPIO == 1 && USE_LED_GPIO == 1
-    led_handle = drv_led_create(LED_PORT, LED_PIN);
+    led_handle = drv_led_create(LED_PORT, GREEN_LED_PIN);
     if (led_handle != NULL)
     {
         drv_led_init(led_handle);
@@ -52,7 +63,20 @@ int main(void) /*lint !e970*/
 #endif // HW_CONFIG_GPIO
     // delay(10000);
     // clock_hal_delay(1000000); // delay 1 second to allow debugger to connect
+    uint32_t last_found_address = 8U;
 
+    while (last_found_address != 0U)
+    {
+        last_found_address = i2c_hal_scan(0u, I2C_SDA_PORT, I2C_SDA_PIN, I2C_SCL_PORT, I2C_SCL_PIN,
+                                          last_found_address);
+        if (last_found_address != 0U)
+        {
+            // Device found at last_found_address
+            volatile uint32_t dummy =
+                last_found_address; // Set breakpoint here to inspect detected device address
+            (void)dummy;
+        }
+    }
     while (1)
     {
         // clock_hal_delay(1000); // delay 1 second to allow debugger to connect

@@ -47,18 +47,23 @@
 #define HW_CONFIG_GPIO 1
 // number of GPIO interrupts supported
 #define GPIOS_INTERRUPTS 11
-#define NUMBER_GPIOS_PORTS 2
+#define NUMBER_GPIOS_PORTS 4
+
+#define CHIP_PWR_PIN 6U
 
 #define USE_LED_GPIO 1U
-#define NUMBER_OF_LEDS 1U
-#define LED_PIN 7U
+#define NUMBER_OF_LEDS 2U
+// Green LED on PIO0_9
+#define GREEN_LED_PIN 9U
+// Red LED on PIO0_8
+#define RED_LED_PIN 8U
 #define LED_MODE FLOAT
 #define LED_PORT 0
 
-#define USE_BUTTON_GPIO 1U
+#define USE_BUTTON_GPIO 0U
 #define NUMBER_OF_BUTTONS 1U
 #define BUTTON_ACTIVE_HIGH 1u
-#define BUTTON_PIN 9U
+#define BUTTON_PIN 0U
 #define BUTTON_PORT 0
 #define BUTTON_MODE PULLUP
 #define BUTTON_EDGE IRQ_NEGATIVE
@@ -77,10 +82,10 @@
 // Timer HAL configuration
 #define NUM_TIMERS 2U
 
-#define NUM_I2C_DEVICES 4U
-#define I2C1_SCL_PORT GPIOA_PORT
-#define I2C1_SCL_PIN 6U
-#define I2C1_SDA_PORT GPIOA_PORT
-#define I2C1_SDA_PIN 7U
+#define NUM_I2C_DEVICES 1U
+#define I2C_SCL_PORT 0
+#define I2C_SCL_PIN 4U
+#define I2C_SDA_PORT 0
+#define I2C_SDA_PIN 5U
 
 #endif /* HW_CONFIG_H_ */

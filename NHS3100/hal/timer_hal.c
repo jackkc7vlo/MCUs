@@ -99,9 +99,9 @@ void timer_hal_initialize(void)
         /* Start the counter – TC now free-runs, wrapping at 0xFFFF */
         p_ct16b0->tcr = CT16B_TCR_ENABLE_BIT;
 
-        /* Enable CT16B0 interrupt in the NVIC */
-        NVIC_ClearPendingIRQ(CT16B0_IRQn);
-        NVIC_EnableIRQ(CT16B0_IRQn);
+        /* NOTE: CT16B0_IRQn is enabled in the NVIC only when the first timer
+         * is armed (timer_hal_start / timer_hal_enable), not here, so no
+         * spurious interrupt can fire before a match register is configured. */
 
         timers_initialized = true;
     }
@@ -176,6 +176,10 @@ void timer_hal_enable(const p_timer_hal_t p_timer, bool enable)
         uint32_t match    = (p_ct16b0->tc + p_timer->mseconds) & CT16B_MR_MASK;
         p_ct16b0->mrs[id] = match;
 
+        /* Ensure the NVIC is enabled now that a channel is being armed */
+        NVIC_ClearPendingIRQ(CT16B0_IRQn);
+        NVIC_EnableIRQ(CT16B0_IRQn);
+
         /* Enable the interrupt for this match channel */
         if (id == 0U)
         {
@@ -229,8 +233,11 @@ void timer_hal_start(const p_timer_hal_t p_timer)
     uint32_t match    = (p_ct16b0->tc + p_timer->mseconds) & CT16B_MR_MASK;
     p_ct16b0->mrs[id] = match;
 
-    /* Clear any stale interrupt flag before arming */
+    /* Clear any stale interrupt flag and ensure the NVIC is enabled before
+     * arming the match channel for the first time */
     p_ct16b0->ir = (CT16B_IR_MR0INT_BIT << id);
+    NVIC_ClearPendingIRQ(CT16B0_IRQn);
+    NVIC_EnableIRQ(CT16B0_IRQn);
 
     if (id == 0U)
     {
