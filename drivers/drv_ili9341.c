@@ -62,19 +62,19 @@ extern "C"
  * Defines
  ********************************************************************************/
 #ifndef ILI9341_SPI_CS_PIN
-#msg "ILI9341_SPI_CS_PIN not defined in hw_config.h"
+#pragma message "ILI9341_SPI_CS_PIN not defined in hw_config.h"
 #endif
 
 #ifndef ILI9341_SPI_RESET_PIN
-#msg "ILI9341_SPI_RESET_PIN not defined in hw_config.h"
+#pragma message "ILI9341_SPI_RESET_PIN not defined in hw_config.h"
 #endif
 
 #ifndef ILI9341_SPI_DC_PIN
-#msg "ILI9341_SPI_DC_PIN not defined in hw_config.h"
+#pragma message "ILI9341_SPI_DC_PIN not defined in hw_config.h"
 #endif
 
 #ifndef ILI9341_SPI_BCKL_PIN
-#msg "ILI9341_SPI_BCKL_PIN not defined in hw_config.h"
+#pragma message "ILI9341_SPI_BCKL_PIN not defined in hw_config.h"
 #endif
     /********************************************************************************
      * Typedefs & Enums
@@ -105,18 +105,18 @@ extern "C"
 
     unsigned char hh;
 
-    static p_spi_hal_device_t p_spi        = NULL;
-    static p_gpio_hal_t       p_dc_gpio    = NULL;
-    static p_gpio_hal_t       p_reset_gpio = NULL;
-    static p_gpio_hal_t       p_bckl_gpio  = NULL;
-    static p_gpio_hal_t       p_cs_gpio    = NULL;
+    static p_spi_hal_t  p_spi        = NULL;
+    static p_gpio_hal_t p_dc_gpio    = NULL;
+    static p_gpio_hal_t p_reset_gpio = NULL;
+    static p_gpio_hal_t p_bckl_gpio  = NULL;
+    static p_gpio_hal_t p_cs_gpio    = NULL;
 
     /********************************************************************************
      * Functions
      ********************************************************************************/
 
-    bool drv_ili9341_init(p_spi_hal_device_t spi_device_handle, p_gpio_hal_t cs_gpio_handle,
-                          p_gpio_hal_t reset_gpio_handle, p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle)
+    bool drv_ili9341_init(p_spi_hal_t spi_device_handle, p_gpio_hal_t cs_gpio_handle, p_gpio_hal_t reset_gpio_handle,
+                          p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle)
     {
 
         p_spi        = spi_device_handle;
@@ -127,24 +127,24 @@ extern "C"
 
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           true); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               true); // CS is opposite, so true deselects the display
         }
 
         if (ILI9341_SPI_RESET_PIN != 0xff)
         {
-            p_reset_gpio->set(p_reset_gpio, ILI9341_SPI_RESET_PIN,
-                              true); //
+            gpio_hal_set_state(p_reset_gpio, ILI9341_SPI_RESET_PIN,
+                               true); //
             drv_ili9341_reset();
         }
 
         if (ILI9341_SPI_BCKL_PIN != 0xff)
         {
-            p_bckl_gpio->set(p_bckl_gpio, ILI9341_SPI_BCKL_PIN,
-                             true); //
+            gpio_hal_set_state(p_bckl_gpio, ILI9341_SPI_BCKL_PIN,
+                               true); //
         }
 
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
         // drv_gpio_set_state(p_dc_gpio, false);
 
         drv_ili9341_send_command(0x01);
@@ -280,27 +280,27 @@ extern "C"
     void drv_ili9341_spi_send(unsigned char data)
     {
         // HAL_SPI_Transmit(&lcd_spi, &data, 1, 1);
-        p_spi->write(p_spi, &data, 1);
+        spi_hal_write(p_spi, &data, 1);
     }
 
     void drv_ili9341_spi_send_multiple(unsigned char data, int size)
     {
         // HAL_SPI_Transmit(&lcd_spi, &data, size, 10);
-        p_spi->write(p_spi, &data, size);
+        spi_hal_write(p_spi, &data, size);
     }
 
     void drv_ili9341_spi_send_32(uint8_t command, uint32_t data)
     {
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)false); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)false); // CS is opposite, so true deselects the display
         }
 
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
         // drv_gpio_set_state(p_dc_gpio, false);       // DC pin is low for commands
         drv_ili9341_spi_send(command);
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
         // drv_gpio_set_state(p_dc_gpio, true);
         drv_ili9341_spi_send(data >> 24);
         drv_ili9341_spi_send(data >> 16);
@@ -326,17 +326,17 @@ extern "C"
     {
         if (ILI9341_SPI_RESET_PIN != 0xff)
         {
-            p_reset_gpio->set(p_reset_gpio, ILI9341_SPI_RESET_PIN,
-                              false); //
+            gpio_hal_set_state(p_reset_gpio, ILI9341_SPI_RESET_PIN,
+                               false); //
             // drv_gpio_set_state(p_reset_gpio, false); // low resets it
             clock_hal_delay(50u);
-            p_reset_gpio->set(p_reset_gpio, ILI9341_SPI_RESET_PIN, true);
+            gpio_hal_set_state(p_reset_gpio, ILI9341_SPI_RESET_PIN, true);
             // drv_gpio_set_state(p_reset_gpio, true);
         }
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)false); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)false); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)false); // Selects the display
         clock_hal_delay(50u);
@@ -344,8 +344,8 @@ extern "C"
         drv_ili9341_send_command(0x01);
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)true); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)true); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)true); // deselects the display
     }
@@ -394,9 +394,9 @@ extern "C"
         }
         drv_ili9341_set_address(x, y, X_SIZE - 1u, Y_SIZE - 1u);
         // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands;
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
         drv_ili9341_spi_send(0x2C);
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
         // drv_gpio_set_state(p_dc_gpio, true); // DC pin is high for data
         drv_ili9341_spi_send(color >> 8);
         drv_ili9341_spi_send(color);
@@ -449,10 +449,10 @@ extern "C"
             drv_ili9341_draw_pixel(x0, y0 + r, color);
             drv_ili9341_draw_pixel(x0, y0 - r, color);
             drv_ili9341_set_address(x0 - r, y0, x0 + r, y0);
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
             // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands;
             drv_ili9341_spi_send(0x2C);
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
             // drv_gpio_set_state(p_dc_gpio, true); // DC pin is high for data
             for (uint32_t fff = 0; fff < r * 2u + 1u; fff++)
             {
@@ -472,9 +472,9 @@ extern "C"
                 f += ddF_x;
                 drv_ili9341_set_address(x0 - x, y0 + y, x0 + x, y0 + y);
                 // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands;
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
                 drv_ili9341_spi_send(0x2C);
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
                 // drv_gpio_set_state(p_dc_gpio, true); // DC pin is high for data
                 for (uint32_t fff = 0; fff < x * 2u + 1u; fff++)
                 {
@@ -483,9 +483,9 @@ extern "C"
                 }
                 drv_ili9341_set_address(x0 - x, y0 - y, x0 + x, y0 - y);
                 // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands;
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
                 drv_ili9341_spi_send(0x2C);
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
                 // drv_gpio_set_state(p_dc_gpio, true); // DC pin is high for data
                 for (uint32_t fff = 0; fff < x * 2u + 1u; fff++)
                 {
@@ -494,9 +494,9 @@ extern "C"
                 }
                 drv_ili9341_set_address(x0 - y, y0 + x, x0 + y, y0 + x);
                 // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands;
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
                 drv_ili9341_spi_send(0x2C);
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
                 // drv_gpio_set_state(p_dc_gpio, true); // DC pin is high for data
                 for (uint32_t fff = 0; fff < y * 2u + 1u; fff++)
                 {
@@ -505,10 +505,10 @@ extern "C"
                 }
                 drv_ili9341_set_address(x0 - y, y0 - x, x0 + y, y0 - x);
                 // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands;
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
                 drv_ili9341_spi_send(0x2C);
                 // drv_gpio_set_state(p_dc_gpio, true); // DC pin is high for data
-                p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
+                gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
                 for (uint32_t fff = 0; fff < y * 2u + 1u; fff++)
                 {
                     drv_ili9341_spi_send(color >> 8);
@@ -632,14 +632,14 @@ extern "C"
         uint8_t  low_bit  = color;
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)false); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)false); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)false); // Selects the display
         // drv_gpio_set_state(p_dc_gpio, false);       // DC pin is low for commands
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
         drv_ili9341_spi_send(0x2C);
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
         drv_ili9341_spi_send(high_bit);
         drv_ili9341_spi_send(low_bit);
         len--;
@@ -741,8 +741,8 @@ extern "C"
         }
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)true); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)true); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)true); // deselects the display
     }
@@ -755,11 +755,11 @@ extern "C"
         {
         case 1:
             drv_ili9341_set_address(x, y, x + 5, y + 8);
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
             // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands
             drv_ili9341_spi_send(0x2C);
             // drv_gpio_set_state(p_dc_gpio, true); // DC pin is high for data
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
             for (h = 0; h < 8; h++)
             {
                 for (i = 2; i < 8; i++)
@@ -780,9 +780,9 @@ extern "C"
         case 2:
             drv_ili9341_set_address(x, y, x + 7, y + 16);
             // drv_gpio_set_state(p_dc_gpio, false); // DC pin low for command
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
             drv_ili9341_spi_send(0x2C);
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for data
             // drv_gpio_set_state(p_dc_gpio, true); // DC pin high for data
 
             for (h = 0; h < 16; h++)
@@ -808,11 +808,11 @@ extern "C"
     static void before_sending_data()
     {
         // drv_gpio_set_state(p_dc_gpio, true);
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
-        if (p_cs_gpio != NULL)                               // CS is sometimes handled by the SPI driver
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true); // for commands
+        if (p_cs_gpio != NULL)                                   // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)false); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)false); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)false); // Selects the display
 
@@ -822,12 +822,12 @@ extern "C"
 
     static void before_sending_command()
     {
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false); // for commands
         // drv_gpio_set_state(p_dc_gpio, false);
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)false); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)false); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)false); // Selects the display
         //  HAL_GPIO_WritePin(DC_GPIO_Port, DC_Pin, GPIO_PIN_RESET);
@@ -845,14 +845,14 @@ extern "C"
         // drv_gpio_set_state(p_cs_gpio, (bool)false); // Selects the display
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                           (bool)false); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                               (bool)false); // CS is opposite, so true deselects the display
         }
 
         // drv_gpio_set_state(p_dc_gpio, false);       // DC pin is low for commands
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false);
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false);
         drv_ili9341_spi_send(0x2C);
-        p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
+        gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
         // drv_gpio_set_state(p_dc_gpio, true);
         uint8_t data[40 * 2];
         // for (uint32_t j = y0; j < y0 + 40; j++)
@@ -920,20 +920,20 @@ extern "C"
             // drv_gpio_set_state(p_cs_gpio, (bool)false); // Selects the display
             if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
             {
-                p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                               (bool)false); // CS is opposite, so true deselects the display
+                gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                                   (bool)false); // CS is opposite, so true deselects the display
             }
             // drv_gpio_set_state(p_dc_gpio, false);       // DC pin is low for commands
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false);
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false);
             drv_ili9341_spi_send(0x2C);
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
             // drv_gpio_set_state(p_dc_gpio, true);
 
             spi_hal_write(p_spi, data, 80);
             if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
             {
-                p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                               (bool)true); // CS is opposite, so true deselects the display
+                gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                                   (bool)true); // CS is opposite, so true deselects the display
             }
             // drv_gpio_set_state(p_cs_gpio, (bool)true); // Selects the display
             i = 0;
@@ -979,20 +979,20 @@ extern "C"
             drv_ili9341_set_address(x0 - 40, y + (int32_t)y0, x0 + 39, y + (int32_t)y0 + 1);
             if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
             {
-                p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                               (bool)false); // CS is opposite, so true deselects the display
+                gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                                   (bool)false); // CS is opposite, so true deselects the display
             }
             // drv_gpio_set_state(p_dc_gpio, false); // DC pin is low for commands
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, false);
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, false);
             drv_ili9341_spi_send(0x2C);
-            p_dc_gpio->set(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
+            gpio_hal_set_state(p_dc_gpio, ILI9341_SPI_DC_PIN, true);
             // drv_gpio_set_state(p_dc_gpio, true);
             k = 0;
             spi_hal_write(p_spi, data, 160);
             if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
             {
-                p_cs_gpio->set(p_cs_gpio, ILI9341_SPI_CS_PIN,
-                               (bool)true); // CS is opposite, so true deselects the display
+                gpio_hal_set_state(p_cs_gpio, ILI9341_SPI_CS_PIN,
+                                   (bool)true); // CS is opposite, so true deselects the display
             }
             // drv_gpio_set_state(p_cs_gpio, (bool)true); // Selects the display
 

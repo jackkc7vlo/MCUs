@@ -89,8 +89,8 @@ extern "C"
     /********************************************************************************
      * Function Prototypes
      ********************************************************************************/
-    bool drv_ili9341_init(p_spi_hal_device_t spi_device_handle, p_gpio_hal_t cs_gpio_handle,
-                          p_gpio_hal_t reset_gpio_handle, p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle);
+    bool drv_ili9341_init(p_spi_hal_t spi_device_handle, p_gpio_hal_t cs_gpio_handle, p_gpio_hal_t reset_gpio_handle,
+                          p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle);
     void drv_ili9341_reset(void);
     void drv_ili9341_set_rotation(uint8_t rotation);
     void drv_ili9341_fill_screen(uint32_t color);

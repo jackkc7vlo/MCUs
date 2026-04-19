@@ -151,8 +151,8 @@ extern "C"
     // call before initializing any SPI devices
     void drv_st7735_unselect();
 
-    bool drv_st7735_init(p_spi_hal_device_t spi_device_handle, p_gpio_hal_t cs_gpio_handle,
-                         p_gpio_hal_t reset_gpio_handle, p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle);
+    bool drv_st7735_init(p_spi_hal_t spi_device_handle, p_gpio_hal_t cs_gpio_handle, p_gpio_hal_t reset_gpio_handle,
+                         p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle);
     void drv_st7735_draw_pixel(uint16_t x, uint16_t y, uint16_t color);
     void drv_st7735_write_string(uint16_t x, uint16_t y, const char *str, drv_font_def_t font, uint16_t color,
                                  uint16_t bgcolor);

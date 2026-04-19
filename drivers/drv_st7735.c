@@ -35,7 +35,7 @@ extern "C"
 #if HAS_ST7735 == 1u
 
 #include "drv_st7735.h"
-#include "esp_system.h" // ESP SPECIFIC
+// #include "esp_system.h" // ESP SPECIFIC
 #include <gpio_hal.h>
 #include <stdint.h>
 // #include "drv_gpio.h"
@@ -58,19 +58,19 @@ extern "C"
      ********************************************************************************/
 #define DELAY 0x80
 #ifndef ST7735_SPI_CS_PIN
-#msg "ST7735_SPI_CS_PIN not defined in hw_config.h"
+#pragma message "ST7735_SPI_CS_PIN not defined in hw_config.h"
 #endif
 
 #ifndef ST7735_SPI_RESET_PIN
-#msg "ST7735_SPI_RESET_PIN not defined in hw_config.h"
+#pragma message "ST7735_SPI_RESET_PIN not defined in hw_config.h"
 #endif
 
 #ifndef ST7735_SPI_DC_PIN
-#msg "ST7735_SPI_DC_PIN not defined in hw_config.h"
+#pragma message "ST7735_SPI_DC_PIN not defined in hw_config.h"
 #endif
 
 #ifndef ST7735_SPI_BCKL_PIN
-#msg "ST7735_SPI_BCKL_PIN not defined in hw_config.h"
+#pragma message "ST7735_SPI_BCKL_PIN not defined in hw_config.h"
 #endif
 
     /********************************************************************************
@@ -102,11 +102,11 @@ extern "C"
         DELAY,
         100}; // Display On
 
-    static p_spi_hal_device_t p_spi        = NULL;
-    static p_gpio_hal_t       p_dc_gpio    = NULL;
-    static p_gpio_hal_t       p_reset_gpio = NULL;
-    static p_gpio_hal_t       p_bckl_gpio  = NULL;
-    static p_gpio_hal_t       p_cs_gpio    = NULL;
+    static p_spi_hal_t  p_spi        = NULL;
+    static p_gpio_hal_t p_dc_gpio    = NULL;
+    static p_gpio_hal_t p_reset_gpio = NULL;
+    static p_gpio_hal_t p_bckl_gpio  = NULL;
+    static p_gpio_hal_t p_cs_gpio    = NULL;
 
     /********************************************************************************
      * Functions
@@ -115,8 +115,8 @@ extern "C"
     {
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ST7735_SPI_CS_PIN,
-                           false); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ST7735_SPI_CS_PIN,
+                               false); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)false); // Selects the display
     }
@@ -126,8 +126,8 @@ extern "C"
     {
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ST7735_SPI_CS_PIN,
-                           true); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ST7735_SPI_CS_PIN,
+                               true); // CS is opposite, so true deselects the display
         }
         // drv_gpio_set_state(p_cs_gpio, (bool)true); // Deselects the display
     }
@@ -135,16 +135,16 @@ extern "C"
     static void drv_st7735_reset()
     {
         // puling the reset line low then high causes a reset of the display
-        p_reset_gpio->set(p_reset_gpio, ST7735_SPI_RESET_PIN, false);
+        gpio_hal_set_state(p_reset_gpio, ST7735_SPI_RESET_PIN, false);
         clock_hal_delay(10u);
-        p_reset_gpio->set(p_reset_gpio, ST7735_SPI_RESET_PIN, true);
+        gpio_hal_set_state(p_reset_gpio, ST7735_SPI_RESET_PIN, true);
         clock_hal_delay(10u);
     }
 
     static void drv_st7735_write_command(uint8_t cmd)
     {
         // for commands, D/C is low
-        p_dc_gpio->set(p_dc_gpio, ST7735_SPI_DC_PIN, false);
+        gpio_hal_set_state(p_dc_gpio, ST7735_SPI_DC_PIN, false);
         spi_hal_write(p_spi, &cmd, sizeof(cmd));
     }
 
@@ -204,8 +204,8 @@ extern "C"
         drv_st7735_write_command(ST7735_RAMWR);
     }
 
-    bool drv_st7735_init(p_spi_hal_device_t spi_device_handle, p_gpio_hal_t cs_gpio_handle,
-                         p_gpio_hal_t reset_gpio_handle, p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle)
+    bool drv_st7735_init(p_spi_hal_t spi_device_handle, p_gpio_hal_t cs_gpio_handle, p_gpio_hal_t reset_gpio_handle,
+                         p_gpio_hal_t dc_gpio_handle, p_gpio_hal_t bckl_gpio_handle)
     {
         p_spi        = spi_device_handle;
         p_dc_gpio    = dc_gpio_handle;
@@ -217,15 +217,15 @@ extern "C"
 
         if (p_cs_gpio != NULL) // CS is sometimes handled by the SPI driver
         {
-            p_cs_gpio->set(p_cs_gpio, ST7735_SPI_CS_PIN,
-                           true); // CS is opposite, so true deselects the display
+            gpio_hal_set_state(p_cs_gpio, ST7735_SPI_CS_PIN,
+                               true); // CS is opposite, so true deselects the display
         }
 
         // p_dc_gpio = drv_gpio_create_device(ST7735_SPI_AO_PORT, ST7735_SPI_AO_PIN, GPIO_HAL_MODE_OUTPUT, 0, NULL);
 
         if (ST7735_SPI_RESET_PIN != 0xff)
         {
-            p_reset_gpio->set(p_reset_gpio, ST7735_SPI_RESET_PIN, true);
+            gpio_hal_set_state(p_reset_gpio, ST7735_SPI_RESET_PIN, true);
         }
 
         if (p_spi != NULL && p_dc_gpio != NULL)
@@ -233,7 +233,7 @@ extern "C"
             // drv_gpio_init(p_dc_gpio);
             // p_bckl_gpio->set(p_bckl_gpio, ST7735_SPI_BCKL_PIN, true);
             // drv_gpio_set_state(p_dc_gpio, false);
-            p_dc_gpio->set(p_dc_gpio, ST7735_SPI_DC_PIN, false);
+            gpio_hal_set_state(p_dc_gpio, ST7735_SPI_DC_PIN, false);
 
             drv_st7735_select();
             if (ST7735_SPI_RESET_PIN != 0xff)
@@ -333,7 +333,7 @@ extern "C"
         drv_st7735_set_address_window(x, y, x + w - 1, y + h - 1);
 
         uint8_t data[] = {color >> 8, color & 0xFF};
-        p_dc_gpio->set(p_dc_gpio, ST7735_SPI_DC_PIN, true);
+        gpio_hal_set_state(p_dc_gpio, ST7735_SPI_DC_PIN, true);
 
         for (y = h; y > 0; y--)
         {
@@ -365,7 +365,7 @@ extern "C"
             memcpy(line + x * sizeof(pixel), pixel, sizeof(pixel));
 
         // drv_gpio_set_state(p_dc_gpio, true);
-        p_dc_gpio->set(p_dc_gpio, ST7735_SPI_DC_PIN, true);
+        gpio_hal_set_state(p_dc_gpio, ST7735_SPI_DC_PIN, true);
 
         for (y = h; y > 0; y--)
         {
