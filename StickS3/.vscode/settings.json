@@ -1,0 +1,26 @@
+{
+  "C_Cpp.intelliSenseEngine": "default",
+  "idf.espIdfPath": "/home/jack/esp/v6.0/esp-idf",
+  "idf.pythonInstallPath": "C:\\Users\\jackk\\Expressif\\tools\\idf-python\\3.11.2\\python.exe",
+  "idf.openOcdConfigs": [
+    "board/esp32s3-builtin.cfg"
+  ],
+  "idf.adapterTargetName": "esp32s3",
+  "idf.port": "/dev/ttyACM2",
+  "idf.toolsPath": "/home/jack/.espressif",
+  "idf.customExtraVars": {
+    "IDF_TARGET": "esp32s3",
+    "ESP_FLASH_SIZE": "0"
+  },
+  "clangd.path": "/home/jack/.espressif/tools/esp-clang/esp-20.1.1_20250829/esp-clang/bin/clangd",
+  "clangd.arguments": [
+    "--background-index",
+    "--query-driver=**",
+    "--compile-commands-dir=/home/jack/git/MCUs/StickS3/build"
+  ],
+  "idf.flashType": "JTAG",
+  "idf.jtagFlashCommandExtraArgs": [
+    "no_clock_boost"
+  ],
+  "idf.currentSetup": "/home/jack/esp/v6.0/esp-idf"
+}

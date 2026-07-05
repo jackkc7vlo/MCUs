@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "name": "ESP-IDF",
+      "compilerPath": "/home/jack/.espressif/tools/xtensa-esp-elf/esp-15.2.0_20250929/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc",
+      "compileCommands": "${config:idf.buildPath}/compile_commands.json",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "linux-gcc-x64",
+      "includePath": [
+        "${config:idf.espIdfPath}/components/**",
+        "${config:idf.espIdfPathWin}/components/**",
+        "${workspaceFolder}/**",
+        "/home/jack/git/MCUs/hal_include/**",
+        "/home/jack/git/MCUs/drivers/**"
+      ],
+      "browse": {
+        "path": [
+          "${config:idf.espIdfPath}/components",
+          "${config:idf.espIdfPathWin}/components",
+          "${workspaceFolder}",
+          "/home/jack/git/MCUs/hal_include",
+          "/home/jack/git/MCUs/drivers"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
+    }
+  ],
+  "version": 4
+}

@@ -35,7 +35,7 @@ extern "C"
 #if HAS_ST7735 == 1u
 
 #include "drv_st7735.h"
-// #include "esp_system.h" // ESP SPECIFIC
+#include "esp_system.h" // ESP SPECIFIC
 #include <gpio_hal.h>
 #include <stdint.h>
 // #include "drv_gpio.h"
@@ -151,7 +151,7 @@ extern "C"
     static void drv_st7735_write_data(uint8_t *buff, size_t buff_size)
     {
         // for data, D/C is high
-        p_dc_gpio->set(p_dc_gpio, ST7735_SPI_DC_PIN, true);
+        gpio_hal_set_state(p_dc_gpio, ST7735_SPI_DC_PIN, true);
         spi_hal_write(p_spi, buff, buff_size);
     }
 
