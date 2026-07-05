@@ -199,9 +199,9 @@ extern "C"
         if (!spi_buses_init[pool_idx])
         {
             spi_bus_config_t bus_cfg = {
-                .miso_io_num     = HW_CONFIG_SPI2_MISO_PORT, /* To be configured by user */
-                .mosi_io_num     = HW_CONFIG_SPI2_MOSI_PORT, /* To be configured by user */
-                .sclk_io_num     = HW_CONFIG_SPI2_CLK_PORT,  /* To be configured by user */
+                .miso_io_num     = -1, /* To be configured by user */
+                .mosi_io_num     = -1, /* To be configured by user */
+                .sclk_io_num     = -1, /* To be configured by user */
                 .quadwp_io_num   = -1,
                 .quadhd_io_num   = -1,
                 .max_transfer_sz = 4096,

@@ -42,15 +42,19 @@
    or you can edit the following line and set a number here.
 */
 // #define BLINK_GPIO CONFIG_BLINK_GPIO
-static p_led_handle_t led_handle   = NULL;
-static p_timer_hal_t  timer_handle = NULL;
+#if USE_LED_GPIO == 1U
+static p_led_handle_t led_handle = NULL;
+#endif
+static p_timer_hal_t timer_handle = NULL;
 
 void button_callback(button_state_t button_state)
 {
     // button_handle_t p_button_handle = (button_handle_t)p_button;
     if (button_state == BUTTON_PRESSED)
     {
+#if USE_LED_GPIO == 1U
         drv_led_toggle(led_handle);
+#endif
     }
 }
 
@@ -72,6 +76,7 @@ static led_strip_handle_t led_strip;
 ///*********************************************************** */
 #define LCD_HOST SPI2_HOST
 
+#if IS_AIPI
 #define PIN_NUM_MISO 13
 #define PIN_NUM_MOSI 11
 #define PIN_NUM_CLK 12
@@ -189,6 +194,15 @@ void lcd_init(spi_device_handle_t spi)
     /// Enable backlight
     gpio_set_level(PIN_NUM_BCKL, LCD_BK_LIGHT_ON_LEVEL);
 }
+#else
+
+// for TFT display
+static p_gpio_hal_t cs_gpio_handle    = NULL;
+static p_gpio_hal_t reset_gpio_handle = NULL;
+static p_gpio_hal_t dc_gpio_handle    = NULL;
+static p_gpio_hal_t bckl_gpio_handle  = NULL;
+
+#endif // IS_AIPI
 
 #endif // HAS_ILI9341
 #endif // HW_CONFIG_SPI
@@ -495,6 +509,76 @@ void app_main(void)
     }
 
 #endif // HW_CONFIG_GPIO AND USE_BUTTON_GPIO
+#if HAS_ILI9341 == 1u
+    cs_gpio_handle = gpio_hal_create(ILI9341_SPI_CS_PORT);
+    if (cs_gpio_handle != NULL)
+    {
+        ESP_LOGI("TAG", "Initializing CS GPIO");
+        gpio_hal_init(cs_gpio_handle);
+        gpio_hal_pin_direction(cs_gpio_handle, ILI9341_SPI_CS_PIN, PIN_DIRECTION_OUTPUT);
+    }
+    else
+    {
+        ESP_LOGE("TAG", "Failed to create CS GPIO");
+    }
+    reset_gpio_handle = gpio_hal_create(ILI9341_SPI_RESET_PORT);
+    if (reset_gpio_handle != NULL)
+    {
+        ESP_LOGI("TAG", "Initializing RESET GPIO");
+        gpio_hal_init(reset_gpio_handle);
+        gpio_hal_pin_direction(reset_gpio_handle, ILI9341_SPI_RESET_PIN, PIN_DIRECTION_OUTPUT);
+    }
+    else
+    {
+        ESP_LOGE("TAG", "Failed to create RESET GPIO");
+    }
+    dc_gpio_handle = gpio_hal_create(ILI9341_SPI_DC_PORT);
+    if (dc_gpio_handle != NULL)
+    {
+        ESP_LOGI("TAG", "Initializing DC GPIO");
+        gpio_hal_init(dc_gpio_handle);
+        gpio_hal_pin_direction(dc_gpio_handle, ILI9341_SPI_DC_PIN, PIN_DIRECTION_OUTPUT);
+    }
+    else
+    {
+        ESP_LOGE("TAG", "Failed to create DC GPIO");
+    }
+    bckl_gpio_handle = gpio_hal_create(ILI9341_SPI_BCKL_PORT);
+    if (bckl_gpio_handle != NULL)
+    {
+        ESP_LOGI("TAG", "Initializing BCKL GPIO");
+        gpio_hal_init(bckl_gpio_handle);
+        gpio_hal_pin_direction(bckl_gpio_handle, ILI9341_SPI_BCKL_PIN, PIN_DIRECTION_OUTPUT);
+    }
+    else
+    {
+        ESP_LOGE("TAG", "Failed to create BCKL GPIO");
+    }
+    p_spi_hal_t spi_device_handle = spi_hal_create_device(SPI_BUS_1, NULL);
+    if (spi_device_handle != NULL)
+    {
+        spi_hal_initialize();
+        spi_hal_set_baud(spi_device_handle, SPI_HAL_BAUD_30MHz);
+        spi_hal_enable(spi_device_handle, true);
+        if (drv_ili9341_init(spi_device_handle, cs_gpio_handle, reset_gpio_handle, dc_gpio_handle, bckl_gpio_handle))
+        {
+            drv_ili9341_set_rotation(1);
+            drv_ili9341_fill_screen(ILI9341_BLUE);
+            drv_ili9341_draw_empty_rect(ILI9341_YELLOW, 10, 30, 310, 230);
+            drv_ili9341_draw_empty_rect(ILI9341_YELLOW, 310, 230, 10, 30);
+            // Write something
+            drv_ili9341_draw_string(10, 10, ILI9341_WHITE, ILI9341_BLACK, "Welcome!", 2);
+        }
+        else
+        {
+            ESP_LOGE("TAG", "Failed to initialize ILI9341 display");
+        }
+    }
+    else
+    {
+        ESP_LOGE("TAG", "Failed to create SPI device");
+    }
+#endif
     timer_hal_enable(timer_handle, true);
 
     uint32_t last_found_address = 8U;
@@ -520,7 +604,7 @@ void app_main(void)
         timer_hal_reset_count(timer_handle);
         timer_hal_start(timer_handle);
         // clock_hal_delay(1000U);
-        drv_led_toggle(led_handle);
+        // drv_led_toggle(led_handle);
 
         // drv_button_is_pressed(p_button_handle);
         // bool pressed = drv_button_is_pressed(p_button_handle);

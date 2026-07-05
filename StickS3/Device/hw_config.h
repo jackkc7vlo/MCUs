@@ -37,71 +37,19 @@
  * @moditem{V1.0.x, Mar-08-2025, Jack Wilson, Initial Release, jackkc7vlo@gmail.com }
  * @modend
  *
- */
+*/
 #include <stdint.h>
 
 #ifndef HW_CONFIG_H_
 #define HW_CONFIG_H_
 
-#define HW_CONFIG_GPIO 1
-// number of GPIO interrupts supported
-#define GPIOS_INTERRUPTS 1
-#define NUMBER_GPIOS_PORTS 5
-
-#define USE_LED_GPIO 1U
-#define NUMBER_OF_LEDS 1U
-#define LED_PIN 18U
-#define LED_MODE FLOAT
-#define LED_PORT 0
-
-#define USE_BUTTON_GPIO 1
-#define NUMBER_OF_BUTTONS 1U
-#define BUTTON_ACTIVE_HIGH 0u
-#define BUTTON_PIN 19U
-#define BUTTON_PORT 0
-#define BUTTON_MODE PULLDOWN
-#define BUTTON_EDGE IRQ_POSITIVE
-#define BUTTON_DEBOUNCE_MS 10U
-#define BUTTON_IRQ_PRIORITY 3U
-
-#define HW_CONFIG_M4_FPU 0
+#define HW_CONFIG_GPIO       1
+#define HW_CONFIG_M4_FPU     0
 #define HW_CONFIG_DEBUG_UART 0
-#define HW_CONFIG_TIMEBASE 0
-#define HW_CONFIG_BSP 0
-#define HW_CONFIG_ADC 0
-#define HW_CONFIG_SPI 1
-#define HW_CONFIG_I2C 1
+#define HW_CONFIG_TIMEBASE   0
+#define HW_CONFIG_BSP        0
+#define HW_CONFIG_ADC        0
+#define HW_CONFIG_SPI        0
+#define HW_CONFIG_I2C        0
 
-#define NUM_I2C_DEVICES 1U
-#define USE_I2C_INTERRUPTS 0      /*!< 1 = use interrupt-driven I2C     */
-#define I2C_DEFAULT_SPEED 100000U /*!< Default I2C clock speed (Hz)     */
-#define I2C_BUS 0                 /*!< I2C bus number (I2C_NUM_0)       */
-#define HW_CONFIG_I2C_SDA_PORT 21 /*!< GPIO 21 - SDA                   */
-#define HW_CONFIG_I2C_SCL_PORT 22 /*!< GPIO 22 - SCL                   */
-#define I2C1_SDA_PORT 0U
-#define I2C1_SDA_PIN 21U
-#define I2C1_SCL_PORT 0U
-#define I2C1_SCL_PIN 22U
-
-#define HW_CONFIG_I2C_NUM_DEVICES 1U
-
-#define HAS_ILI9341 1u
-#if HAS_ILI9341 == 1u
-// Chip select pin for the ILI9341
-#define ILI9341_SPI_CS_PORT 0
-#define ILI9341_SPI_CS_PIN 17u
-
-// Data/Command pin for the ILI9341
-#define ILI9341_SPI_DC_PORT 0
-#define ILI9341_SPI_DC_PIN 15u
-
-// Reset pin for the ILI9341
-#define ILI9341_SPI_RESET_PORT 0
-#define ILI9341_SPI_RESET_PIN 18u
-// Backlight control pin for the ILI9341
-#define ILI9341_SPI_BCKL_PORT 0
-#define ILI9341_SPI_BCKL_PIN 15u
-#endif // HAS_ILI9341
-
-#define NUM_TIMERS 2U
 #endif /* HW_CONFIG_H_ */
