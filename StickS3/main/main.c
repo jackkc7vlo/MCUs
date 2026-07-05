@@ -46,15 +46,16 @@
 static void lcd_cmd(spi_device_handle_t spi, uint8_t cmd)
 {
     gpio_set_level(45, 0); // DC=LOW for command
-    spi_transaction_t t = { .length = 8, .tx_buffer = &cmd };
+    spi_transaction_t t = {.length = 8, .tx_buffer = &cmd};
     spi_device_polling_transmit(spi, &t);
 }
 
 static void lcd_data(spi_device_handle_t spi, const uint8_t *data, int len)
 {
-    if (len == 0) return;
+    if (len == 0)
+        return;
     gpio_set_level(45, 1); // DC=HIGH for data
-    spi_transaction_t t = { .length = len * 8, .tx_buffer = data };
+    spi_transaction_t t = {.length = len * 8, .tx_buffer = data};
     spi_device_polling_transmit(spi, &t);
 }
 
@@ -64,17 +65,23 @@ static void test_display_direct(void)
 
     // 1. Enable M5PM1 L3B power rail via direct I2C
     i2c_master_bus_config_t bus_cfg = {
-        .sda_io_num = 47, .scl_io_num = 48,
-        .clk_source = I2C_CLK_SRC_DEFAULT,
-        .i2c_port = 1,  // Use I2C_NUM_1 (same as M5GFX)
+        .sda_io_num        = 47,
+        .scl_io_num        = 48,
+        .clk_source        = I2C_CLK_SRC_DEFAULT,
+        .i2c_port          = 1, // Use I2C_NUM_1 (same as M5GFX)
         .glitch_ignore_cnt = 7,
     };
     bus_cfg.flags.enable_internal_pullup = true;
-    i2c_master_bus_handle_t i2c_bus = NULL;
-    esp_err_t err = i2c_new_master_bus(&bus_cfg, &i2c_bus);
-    if (err != ESP_OK) { ESP_LOGE("LCD_DIRECT", "I2C bus failed: %s", esp_err_to_name(err)); return; }
+    i2c_master_bus_handle_t i2c_bus      = NULL;
+    esp_err_t               err          = i2c_new_master_bus(&bus_cfg, &i2c_bus);
+    if (err != ESP_OK)
+    {
+        ESP_LOGE("LCD_DIRECT", "I2C bus failed: %s", esp_err_to_name(err));
+        return;
+    }
 
-    i2c_device_config_t dev_cfg = { .dev_addr_length = I2C_ADDR_BIT_LEN_7, .device_address = 0x6E, .scl_speed_hz = 100000 };
+    i2c_device_config_t dev_cfg = {
+        .dev_addr_length = I2C_ADDR_BIT_LEN_7, .device_address = 0x6E, .scl_speed_hz = 100000};
     i2c_master_dev_handle_t m5pm1 = NULL;
     i2c_master_bus_add_device(i2c_bus, &dev_cfg, &m5pm1);
 
@@ -82,57 +89,75 @@ static void test_display_direct(void)
     uint8_t reg_val = 0;
     uint8_t tx[2];
     // Reg 0x09: disable I2C idle sleep
-    tx[0] = 0x09; tx[1] = 0x00; i2c_master_transmit(m5pm1, tx, 2, -1);
+    tx[0] = 0x09;
+    tx[1] = 0x00;
+    i2c_master_transmit(m5pm1, tx, 2, -1);
     // Reg 0x16: set GPIO2 as GPIO function (clear bit 2)
     i2c_master_transmit_receive(m5pm1, (uint8_t[]){0x16}, 1, &reg_val, 1, -1);
-    tx[0] = 0x16; tx[1] = reg_val & ~0x04; i2c_master_transmit(m5pm1, tx, 2, -1);
+    tx[0] = 0x16;
+    tx[1] = reg_val & ~0x04;
+    i2c_master_transmit(m5pm1, tx, 2, -1);
     // Reg 0x10: set GPIO2 as output (set bit 2)
     i2c_master_transmit_receive(m5pm1, (uint8_t[]){0x10}, 1, &reg_val, 1, -1);
-    tx[0] = 0x10; tx[1] = reg_val | 0x04; i2c_master_transmit(m5pm1, tx, 2, -1);
+    tx[0] = 0x10;
+    tx[1] = reg_val | 0x04;
+    i2c_master_transmit(m5pm1, tx, 2, -1);
     // Reg 0x13: set GPIO2 push-pull (clear bit 2)
     i2c_master_transmit_receive(m5pm1, (uint8_t[]){0x13}, 1, &reg_val, 1, -1);
-    tx[0] = 0x13; tx[1] = reg_val & ~0x04; i2c_master_transmit(m5pm1, tx, 2, -1);
+    tx[0] = 0x13;
+    tx[1] = reg_val & ~0x04;
+    i2c_master_transmit(m5pm1, tx, 2, -1);
     // Reg 0x11: drive GPIO2 HIGH (set bit 2)
     i2c_master_transmit_receive(m5pm1, (uint8_t[]){0x11}, 1, &reg_val, 1, -1);
-    tx[0] = 0x11; tx[1] = reg_val | 0x04; i2c_master_transmit(m5pm1, tx, 2, -1);
+    tx[0] = 0x11;
+    tx[1] = reg_val | 0x04;
+    i2c_master_transmit(m5pm1, tx, 2, -1);
     ESP_LOGI("LCD_DIRECT", "M5PM1 L3B enabled");
     vTaskDelay(pdMS_TO_TICKS(100));
 
     // 2. Configure GPIO pins
-    gpio_config_t io = { .pin_bit_mask = (1ULL<<45)|(1ULL<<41)|(1ULL<<21)|(1ULL<<38),
-                         .mode = GPIO_MODE_OUTPUT };
+    gpio_config_t io = {.pin_bit_mask = (1ULL << 45) | (1ULL << 41) | (1ULL << 21) | (1ULL << 38),
+                        .mode         = GPIO_MODE_OUTPUT};
     gpio_config(&io);
     gpio_set_level(38, 1); // Backlight on
     gpio_set_level(41, 1); // CS deselect
     gpio_set_level(45, 0); // DC low
     // Hardware reset
-    gpio_set_level(21, 0); vTaskDelay(pdMS_TO_TICKS(20));
-    gpio_set_level(21, 1); vTaskDelay(pdMS_TO_TICKS(150));
+    gpio_set_level(21, 0);
+    vTaskDelay(pdMS_TO_TICKS(20));
+    gpio_set_level(21, 1);
+    vTaskDelay(pdMS_TO_TICKS(150));
 
     // 3. Init SPI3 with MOSI=39, SCK=40
-    spi_bus_config_t spi_bus = {
-        .mosi_io_num = 39, .miso_io_num = -1, .sclk_io_num = 40,
-        .quadwp_io_num = -1, .quadhd_io_num = -1, .max_transfer_sz = 32768
-    };
-    spi_bus_initialize(SPI3_HOST, &spi_bus, SPI_DMA_CH_AUTO);
+    spi_bus_config_t spi_bus = {.mosi_io_num     = 39,
+                                .miso_io_num     = -1,
+                                .sclk_io_num     = 40,
+                                .quadwp_io_num   = -1,
+                                .quadhd_io_num   = -1,
+                                .max_transfer_sz = 65535};
+    spi_bus_initialize(SPI2_HOST, &spi_bus, SPI_DMA_CH_AUTO);
 
     spi_device_interface_config_t spi_dev = {
-        .mode = 0, .clock_speed_hz = 40000000, .spics_io_num = -1, .queue_size = 7
-    };
+        .mode = 0, .clock_speed_hz = 10000000, .spics_io_num = -1, .queue_size = 7};
     spi_device_handle_t spi;
-    spi_bus_add_device(SPI3_HOST, &spi_dev, &spi);
-    ESP_LOGI("LCD_DIRECT", "SPI3 initialized at 40MHz");
+    spi_bus_add_device(SPI2_HOST, &spi_dev, &spi);
+    ESP_LOGI("LCD_DIRECT", "SPI2 initialized at 40MHz");
 
     // 4. CS low, send init commands
     gpio_set_level(41, 0); // CS select
 
-    lcd_cmd(spi, 0x01); vTaskDelay(pdMS_TO_TICKS(150)); // SWRESET
-    lcd_cmd(spi, 0x11); vTaskDelay(pdMS_TO_TICKS(255)); // SLPOUT
-    lcd_cmd(spi, 0x3A); lcd_data(spi, (uint8_t[]){0x55}, 1); // COLMOD 16bit
-    lcd_cmd(spi, 0x36); lcd_data(spi, (uint8_t[]){0x00}, 1); // MADCTL
-    lcd_cmd(spi, 0x21); // INVON
-    lcd_cmd(spi, 0x13); // NORON
-    lcd_cmd(spi, 0x29); vTaskDelay(pdMS_TO_TICKS(100)); // DISPON
+    lcd_cmd(spi, 0x01);
+    vTaskDelay(pdMS_TO_TICKS(150)); // SWRESET
+    lcd_cmd(spi, 0x11);
+    vTaskDelay(pdMS_TO_TICKS(255)); // SLPOUT
+    lcd_cmd(spi, 0x3A);
+    lcd_data(spi, (uint8_t[]){0x55}, 1); // COLMOD 16bit
+    lcd_cmd(spi, 0x36);
+    lcd_data(spi, (uint8_t[]){0x00}, 1); // MADCTL
+    lcd_cmd(spi, 0x21);                  // INVON
+    lcd_cmd(spi, 0x13);                  // NORON
+    lcd_cmd(spi, 0x29);
+    vTaskDelay(pdMS_TO_TICKS(100)); // DISPON
     ESP_LOGI("LCD_DIRECT", "Init commands sent");
 
     // 5. Fill screen BLUE (RGB565: 0x001F)
@@ -148,8 +173,12 @@ static void test_display_direct(void)
     uint8_t blue[2] = {0x00, 0x1F};
     // Send all 135*240 = 32400 pixels as a single DMA transfer
     static uint8_t DRAM_ATTR pixel_buf[135 * 240 * 2];
-    for (int i = 0; i < 135 * 240 * 2; i += 2) { pixel_buf[i] = 0x00; pixel_buf[i+1] = 0x1F; }
-    spi_transaction_t bulk = { .length = sizeof(pixel_buf) * 8, .tx_buffer = pixel_buf };
+    for (int i = 0; i < 135 * 240 * 2; i += 2)
+    {
+        pixel_buf[i]     = 0x00;
+        pixel_buf[i + 1] = 0x1F;
+    }
+    spi_transaction_t bulk = {.length = sizeof(pixel_buf) * 8, .tx_buffer = pixel_buf};
     spi_device_polling_transmit(spi, &bulk);
     (void)blue;
 
@@ -614,7 +643,7 @@ void app_main(void)
 void app_main(void)
 {
     // Direct display test - bypass all HAL layers to confirm hardware works
-    test_display_direct();
+    // test_display_direct();
 
     // Fetch total and free memory inside the dedicated PSRAM pool
     size_t total_psram = heap_caps_get_total_size(MALLOC_CAP_SPIRAM);
@@ -738,11 +767,10 @@ void app_main(void)
     // must be driven HIGH to enable the display before any SPI communication.
     // Without this step, the ST7789 panel has no power and ignores all data.
     // -----------------------------------------------------------------------
-    p_i2c_hal_t i2c_handle = i2c_hal_create_device(0U, I2C1_SDA_PORT, I2C1_SDA_PIN,
-                                                    I2C1_SCL_PORT, I2C1_SCL_PIN, NULL);
+    p_i2c_hal_t i2c_handle = i2c_hal_create_device(0U, I2C1_SDA_PORT, I2C1_SDA_PIN, I2C1_SCL_PORT, I2C1_SCL_PIN, NULL);
     if (i2c_handle != NULL)
     {
-        #define M5PM1_ADDR 0x6EU
+#define M5PM1_ADDR 0x6EU
         uint8_t reg_val = 0u;
 
         // Disable I2C idle sleep mode (reg 0x09 = 0x00)
@@ -811,7 +839,7 @@ void app_main(void)
         {
             drv_st7789_invert_colors(true); // Required for M5Stack StickS3
             clock_hal_delay(100);
-            
+
             // Simple pixel-by-pixel test
             for (int i = 0; i < 100; i++)
             {
@@ -820,9 +848,9 @@ void app_main(void)
                 drv_st7789_draw_pixel(i, 12, ST7789_GREEN);
                 drv_st7789_draw_pixel(i, 13, ST7789_BLUE);
             }
-            
+
             clock_hal_delay(2000);
-            
+
             // Test pattern to verify display is working
             drv_st7789_fill_screen(ST7789_RED);
             clock_hal_delay(500);
@@ -854,7 +882,7 @@ void app_main(void)
         if (last_found_address != 0U)
         {
             // Device found at last_found_address
-             volatile uint32_t dummy = last_found_address; // Set breakpoint here to inspect detected device address
+            volatile uint32_t dummy = last_found_address; // Set breakpoint here to inspect detected device address
         }
     }
 
